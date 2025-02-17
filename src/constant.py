@@ -119,7 +119,7 @@ class PiCoinConfig:
 
     # Reserve Management
     RESERVE_CURRENCY: str = "USD"  # Currency to which Pi Coin is pegged
-    RESERVE_AUDIT_FREQUENCY: str = "monthly"  # Frequency of reserve audits
+    RESERVE_A UDIT_FREQUENCY: str = "monthly"  # Frequency of reserve audits
     RESERVE_AUDIT_PROVIDER: str = "Third Party Auditor"  # Name of the auditing entity
     RESERVE_BUFFER: float = 0.05  # Buffer percentage for reserve management
     RESERVE_GROWTH_STRATEGY: str = "conservative"  # Strategy for reserve growth
@@ -181,8 +181,7 @@ class PiCoinConfig:
 
     # Additional constants can be added here as needed
     MAX_TRANSACTION_HISTORY: int = 10_000  # Maximum number of transaction records to keep
-    SYSTEM_MAINTENANCE_WINDOW: str = "02:00-03:00 UTC"  # Scheduled maintenance window
-    USER_ACCOUNT_LIMIT: int = 5  # Maximum number of accounts per user
+    SYSTEM_MAINTENANCE_WINDOW: str = "02:00-03:00 UTC"  # Scheduled maintenance window USER_ACCOUNT_LIMIT: int = 5  # Maximum number of accounts per user
 
     # Advanced Features
     MULTI_SIG_SUPPORT: bool = True  # Support for multi-signature transactions
