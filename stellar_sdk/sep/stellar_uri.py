@@ -15,19 +15,16 @@ from typing import Dict, List, Optional, Tuple, Union
 from urllib import parse
 
 from ..asset import Asset
-from ..exceptions import ValueError
 from ..fee_bump_transaction_envelope import FeeBumpTransactionEnvelope
 from ..keypair import Keypair
 from ..memo import HashMemo, IdMemo, Memo, NoneMemo, ReturnHashMemo, TextMemo
 from ..transaction_envelope import TransactionEnvelope
-from ..type_checked import type_checked
 
 __all__ = ["PayStellarUri", "TransactionStellarUri", "Replacement"]
 
 STELLAR_SCHEME: str = "web+stellar"
 
 
-@type_checked
 class StellarUri(object, metaclass=abc.ABCMeta):
     def __init__(self, signature: Optional[str] = None):
         self.signature = signature
@@ -69,7 +66,6 @@ class StellarUri(object, metaclass=abc.ABCMeta):
         return callback[4:]
 
 
-@type_checked
 class PayStellarUri(StellarUri):
     """A request for a payment to be signed.
 
@@ -245,13 +241,30 @@ class PayStellarUri(StellarUri):
             signature=signature,
         )
 
-    def __str__(self):
+    def __repr__(self):
         return (
             f"<PayStellarUri [destination={self.destination}, amount={self.amount}, "
             f"asset_code={self.asset_code}, asset_issuer={self.asset_issuer}, "
             f"memo={self.memo}, memo_type={self.memo_type}, callback={self.callback}, "
             f"msg={self.msg}, network_passphrase={self.network_passphrase}, "
             f"origin_domain={self.origin_domain}, signature={self.signature}]>"
+        )
+
+    def __hash__(self):
+        return hash(
+            (
+                self.destination,
+                self.amount,
+                self.asset_code,
+                self.asset_issuer,
+                self.memo,
+                self.memo_type,
+                self.callback,
+                self.msg,
+                self.network_passphrase,
+                self.origin_domain,
+                self.signature,
+            )
         )
 
     def __eq__(self, other: object) -> bool:
@@ -272,7 +285,6 @@ class PayStellarUri(StellarUri):
         )
 
 
-@type_checked
 class Replacement:
     """Used to represent a single replacement.
 
@@ -297,12 +309,15 @@ class Replacement:
         self.reference_identifier = reference_identifier
         self.hint = hint
 
-    def __str__(self):
+    def __repr__(self):
         return (
             f"<Replacement [txrep_tx_field_name={self.txrep_tx_field_name}, "
             f"reference_identifier={self.reference_identifier}, "
             f"hint={self.hint}]>"
         )
+
+    def __hash__(self):
+        return hash((self.txrep_tx_field_name, self.reference_identifier, self.hint))
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
@@ -314,7 +329,6 @@ class Replacement:
         )
 
 
-@type_checked
 class TransactionStellarUri(StellarUri):
     """A request for a transaction to be signed.
 
@@ -465,12 +479,26 @@ class TransactionStellarUri(StellarUri):
             signature=signature,
         )
 
-    def __str__(self):
+    def __repr__(self):
         return (
             f"<TransactionStellarUri [xdr={self.transaction_envelope.to_xdr()}, replace={self.replace}, "
             f"callback={self.callback}, pubkey={self.pubkey}, "
             f"msg={self.msg}, network_passphrase={self.network_passphrase}, "
             f"origin_domain={self.origin_domain}, signature={self.signature}]>"
+        )
+
+    def __hash__(self):
+        return hash(
+            (
+                self.transaction_envelope,
+                self.replace,
+                self.callback,
+                self.pubkey,
+                self.msg,
+                self.network_passphrase,
+                self.origin_domain,
+                self.signature,
+            )
         )
 
     def __eq__(self, other: object) -> bool:

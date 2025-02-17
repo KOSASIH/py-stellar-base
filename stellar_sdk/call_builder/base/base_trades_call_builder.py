@@ -2,12 +2,10 @@ from typing import Union
 
 from ...asset import Asset
 from ...call_builder.base.base_call_builder import BaseCallBuilder
-from ...type_checked import type_checked
 
 __all__ = ["BaseTradesCallBuilder"]
 
 
-@type_checked
 class BaseTradesCallBuilder(BaseCallBuilder):
     """Creates a new :class:`TradesCallBuilder` pointed to server defined by horizon_url.
 
@@ -68,7 +66,7 @@ class BaseTradesCallBuilder(BaseCallBuilder):
         Horizon will reject requests which attempt to set
         `trade_type` to ``liquidity_pools`` when using the offer id filter.
 
-        :param trade_type: trade type, the currently supported types are ``"orderbook"``, ``"liquidity_pools"`` and ``"all"``,
+        :param trade_type: trade type, the currently supported types are ``"orderbook"``, ``"liquidity_pool"`` and ``"all"``,
             defaults to ``"all"``.
         :return: current TradesCallBuilder instance
         """

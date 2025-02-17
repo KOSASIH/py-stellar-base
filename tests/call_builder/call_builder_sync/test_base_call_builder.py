@@ -4,12 +4,13 @@ from stellar_sdk.__version__ import __version__
 from stellar_sdk.call_builder.call_builder_sync import BaseCallBuilder
 from stellar_sdk.client.requests_client import RequestsClient
 from stellar_sdk.exceptions import BadRequestError, NotFoundError, NotPageableError
+from tests import HTTPBIN_URL
 
 
 @pytest.mark.slow
 class TestBaseCallBuilder:
     def test_get_data(self):
-        url = "https://httpbin.overcat.me/get"
+        url = HTTPBIN_URL + "get"
         client = RequestsClient()
         resp = (
             BaseCallBuilder(horizon_url=url, client=client)
@@ -24,10 +25,7 @@ class TestBaseCallBuilder:
         ] == "py-stellar-base/{}/RequestsClient".format(__version__)
         assert resp["headers"]["X-Client-Name"] == "py-stellar-base"
         assert resp["headers"]["X-Client-Version"] == __version__
-        assert (
-            resp["url"]
-            == "https://httpbin.overcat.me/get?limit=10&cursor=10086&order=desc"
-        )
+        assert resp["url"] == HTTPBIN_URL + "get?limit=10&cursor=10086&order=desc"
 
     @pytest.mark.timeout(30)
     def test_stream_data(self):
@@ -76,7 +74,7 @@ class TestBaseCallBuilder:
         assert exception.extras is None
 
     def test_get_data_no_link(self):
-        url = "https://httpbin.overcat.me/get"
+        url = HTTPBIN_URL + "get"
         client = RequestsClient()
         call_builder = (
             BaseCallBuilder(horizon_url=url, client=client)
@@ -89,7 +87,7 @@ class TestBaseCallBuilder:
         assert call_builder.prev_href is None
 
     def test_get_data_not_pageable_raise(self):
-        url = "https://httpbin.overcat.me/get"
+        url = HTTPBIN_URL + "get"
         client = RequestsClient()
         call_builder = (
             BaseCallBuilder(horizon_url=url, client=client)
@@ -108,50 +106,36 @@ class TestBaseCallBuilder:
         url = "https://horizon.stellar.org/transactions"
         client = RequestsClient()
         call_builder = (
-            BaseCallBuilder(horizon_url=url, client=client)
-            .cursor(81058917781504)
-            .limit(10)
-            .order(desc=True)
+            BaseCallBuilder(horizon_url=url, client=client).limit(10).order(desc=True)
         )
         first_resp = call_builder.call()
-        assert first_resp["_links"] == {
-            "self": {
-                "href": "https://horizon.stellar.org/transactions?cursor=81058917781504&limit=10&order=desc"
-            },
-            "next": {
-                "href": "https://horizon.stellar.org/transactions?cursor=12884905984&limit=10&order=desc"
-            },
-            "prev": {
-                "href": "https://horizon.stellar.org/transactions?cursor=80607946215424&limit=10&order=asc"
-            },
-        }
+        assert (
+            first_resp["_links"]["self"]["href"]
+            == "https://horizon.stellar.org/transactions?cursor=&limit=10&order=desc"
+        )
+
+        next_url = first_resp["_links"]["next"]["href"]
+        next_url_cursor = next_url.split("cursor=")[1].split("&")[0]
+
         next_resp = call_builder.next()
-        assert next_resp["_links"] == {
-            "self": {
-                "href": "https://horizon.stellar.org/transactions?cursor=12884905984&limit=10&order=desc"
-            },
-            "next": {
-                "href": "https://horizon.stellar.org/transactions?cursor=12884905984&limit=10&order=desc"
-            },
-            "prev": {
-                "href": "https://horizon.stellar.org/transactions?cursor=12884905984&limit=10&order=asc"
-            },
-        }
+        assert next_resp["_links"]["self"][
+            "href"
+        ] == "https://horizon.stellar.org/transactions?cursor={}&limit=10&order=desc".format(
+            next_url_cursor
+        )
+
+        prev_url = next_resp["_links"]["prev"]["href"]
+        prev_url_cursor = prev_url.split("cursor=")[1].split("&")[0]
         prev_page = call_builder.prev()
-        assert prev_page["_links"] == {
-            "self": {
-                "href": "https://horizon.stellar.org/transactions?cursor=12884905984&limit=10&order=asc"
-            },
-            "next": {
-                "href": "https://horizon.stellar.org/transactions?cursor=81827716927488&limit=10&order=asc"
-            },
-            "prev": {
-                "href": "https://horizon.stellar.org/transactions?cursor=33676838572032&limit=10&order=desc"
-            },
-        }
+        assert prev_page["_links"]["self"][
+            "href"
+        ] == "https://horizon.stellar.org/transactions?cursor={}&limit=10&order=asc".format(
+            prev_url_cursor
+        )
+        client.close()
 
     def test_horizon_url_params(self):
-        url = "https://httpbin.overcat.me/get?version=1.2&auth=myPassw0wd"
+        url = HTTPBIN_URL + "get?version=1.2&auth=myPassw0wd"
         client = RequestsClient()
         resp = (
             BaseCallBuilder(horizon_url=url, client=client)
@@ -174,5 +158,6 @@ class TestBaseCallBuilder:
         assert resp["headers"]["X-Client-Version"] == __version__
         assert (
             resp["url"]
-            == "https://httpbin.overcat.me/get?version=1.2&auth=myPassw0wd&limit=10&cursor=10086&order=desc"
+            == HTTPBIN_URL
+            + "get?version=1.2&auth=myPassw0wd&limit=10&cursor=10086&order=desc"
         )

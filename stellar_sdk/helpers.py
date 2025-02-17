@@ -1,13 +1,12 @@
+import warnings
 from typing import Union
 
 from .fee_bump_transaction_envelope import FeeBumpTransactionEnvelope
 from .transaction_envelope import TransactionEnvelope
-from .type_checked import type_checked
 
 __all__ = ["parse_transaction_envelope_from_xdr"]
 
 
-@type_checked
 def parse_transaction_envelope_from_xdr(
     xdr: str, network_passphrase: str
 ) -> Union[TransactionEnvelope, FeeBumpTransactionEnvelope]:
@@ -31,6 +30,10 @@ def parse_transaction_envelope_from_xdr(
     :raises: :exc:`ValueError <stellar_sdk.exceptions.ValueError>` - XDR is neither :py:class:`TransactionEnvelope <stellar_sdk.transaction_envelope.TransactionEnvelope>`
         nor :py:class:`FeeBumpTransactionEnvelope <stellar_sdk.fee_bump_transaction_envelope.FeeBumpTransactionEnvelope>`
     """
+    warnings.warn(
+        "This function is deprecated. Use `TransactionBuilder.from_xdr` instead.",
+        DeprecationWarning,
+    )
     if FeeBumpTransactionEnvelope.is_fee_bump_transaction_envelope(xdr):
         return FeeBumpTransactionEnvelope.from_xdr(xdr, network_passphrase)
     return TransactionEnvelope.from_xdr(xdr, network_passphrase)

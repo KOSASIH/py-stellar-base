@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Sequence
 
 from . import xdr as stellar_xdr
 from .ledger_bounds import LedgerBounds
@@ -10,8 +10,8 @@ class Preconditions:
     """This contains a set of conditions, if a transaction can be accepted by the network,
     it must meet these conditions.
 
-    :param time_bounds: required extra signers.
-    :param ledger_bounds: required extra signers.
+    :param time_bounds: The timebounds for the transaction.
+    :param ledger_bounds: The ledgerbounds for the transaction.
     :param min_sequence_number: The minimum source account sequence
         number this transaction is valid for. If the value is ``None``,
         the transaction is valid when **source account's sequence number == tx.sequence - 1**.
@@ -33,7 +33,7 @@ class Preconditions:
         min_sequence_number: int = None,
         min_sequence_age: int = None,
         min_sequence_ledger_gap: int = None,
-        extra_signers: List[SignerKey] = None,
+        extra_signers: Sequence[SignerKey] = None,
     ):
         if not extra_signers:
             extra_signers = []
@@ -179,6 +179,18 @@ class Preconditions:
         else:
             raise ValueError(f"Invalid PreconditionType: {xdr_object.type!r}")
 
+    def __hash__(self):
+        return hash(
+            (
+                self.time_bounds,
+                self.ledger_bounds,
+                self.min_sequence_number,
+                self.min_sequence_age,
+                self.min_sequence_ledger_gap,
+                self.extra_signers,
+            )
+        )
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
             return NotImplemented
@@ -191,7 +203,7 @@ class Preconditions:
             and self.extra_signers == other.extra_signers
         )
 
-    def __str__(self):
+    def __repr__(self):
         return (
             f"<Preconditions ["
             f"time_bounds={self.time_bounds}, "

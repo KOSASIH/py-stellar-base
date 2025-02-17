@@ -1,12 +1,16 @@
+import binascii
+import math
+import os
 import time
 import warnings
 from decimal import Decimal
-from typing import List, Optional, Union
+from typing import List, Optional, Sequence, Union
 
+from . import StrKey
 from . import xdr as stellar_xdr
 from .account import Account
+from .address import Address
 from .asset import Asset
-from .exceptions import ValueError
 from .fee_bump_transaction import FeeBumpTransaction
 from .fee_bump_transaction_envelope import FeeBumpTransactionEnvelope
 from .keypair import Keypair
@@ -21,16 +25,17 @@ from .preconditions import Preconditions
 from .price import Price
 from .signer import Signer
 from .signer_key import SignedPayloadSigner, SignerKey
+from .soroban_data_builder import SorobanDataBuilder
 from .time_bounds import TimeBounds
 from .transaction import Transaction
 from .transaction_envelope import TransactionEnvelope
-from .type_checked import type_checked
 from .utils import hex_to_bytes, is_valid_hash
 
 __all__ = ["TransactionBuilder"]
 
+MIN_BASE_FEE = 100
 
-@type_checked
+
 class TransactionBuilder:
     """Transaction builder helps constructs a new :class:`TransactionEnvelope
     <stellar_sdk.transaction_envelope.TransactionEnvelope>` using the given
@@ -94,7 +99,7 @@ class TransactionBuilder:
         self,
         source_account: Account,
         network_passphrase: str = Network.TESTNET_NETWORK_PASSPHRASE,
-        base_fee: int = 100,
+        base_fee: int = MIN_BASE_FEE,
         v1: bool = True,
     ):
         self.source_account: Account = source_account
@@ -110,6 +115,8 @@ class TransactionBuilder:
         self.memo: Memo = NoneMemo()
         self.v1: bool = v1
 
+        self.soroban_data: Optional[stellar_xdr.SorobanTransactionData] = None
+
     def build(self) -> TransactionEnvelope:
         """This will build the transaction envelope.
         It will also increment the source account's sequence number by 1.
@@ -123,6 +130,7 @@ class TransactionBuilder:
                 "You can learn why you should set it up through this link: "
                 "https://www.stellar.org/developers-blog/transaction-submission-timeouts-and-dynamic-fees-faq"
             )
+
         source = self.source_account.account
         sequence = self.source_account.sequence + 1
         preconditions = Preconditions(
@@ -133,13 +141,17 @@ class TransactionBuilder:
             min_sequence_ledger_gap=self.min_sequence_ledger_gap,
             extra_signers=self.extra_signers,
         )
+        fee = self.base_fee * len(self.operations)
+        if self.soroban_data:
+            fee += self.soroban_data.resource_fee.int64
         transaction = Transaction(
             source=source,
             sequence=sequence,
-            fee=self.base_fee * len(self.operations),
+            fee=fee,
             operations=self.operations,
             memo=self.memo,
             preconditions=preconditions,
+            soroban_data=self.soroban_data,
             v1=self.v1,
         )
         transaction_envelope = TransactionEnvelope(
@@ -167,9 +179,36 @@ class TransactionBuilder:
         :param network_passphrase: The network to connect to for verifying and retrieving additional attributes from.
         :return: a :class:`TransactionBuilder <stellar_sdk.transaction_envelope.TransactionBuilder>` via the XDR object.
         """
+
+        if base_fee < MIN_BASE_FEE:
+            raise ValueError(
+                f"Invalid `base_fee`, it should be at least {MIN_BASE_FEE} stroops."
+            )
+
+        soroban_resource_fee = 0
+        if inner_transaction_envelope.transaction.soroban_data:
+            soroban_resource_fee = (
+                inner_transaction_envelope.transaction.soroban_data.resource_fee.int64
+            )
+
+        inner_include_fee = (
+            inner_transaction_envelope.transaction.fee - soroban_resource_fee
+        )  # dont include soroban resource fee
+        inner_base_fee = math.ceil(
+            inner_include_fee / len(inner_transaction_envelope.transaction.operations)
+        )
+
+        if base_fee < inner_base_fee:
+            raise ValueError(
+                f"Invalid `base_fee`, it should be at least {inner_base_fee} stroops."
+            )
+
+        fee = base_fee * (len(inner_transaction_envelope.transaction.operations) + 1)
+        fee += soroban_resource_fee
+
         fee_bump_transaction = FeeBumpTransaction(
             fee_source=fee_source,
-            base_fee=base_fee,
+            fee=fee,
             inner_transaction_envelope=inner_transaction_envelope,
         )
         transaction_envelope = FeeBumpTransactionEnvelope(
@@ -181,60 +220,29 @@ class TransactionBuilder:
     @staticmethod
     def from_xdr(
         xdr: str, network_passphrase: str
-    ) -> Union["TransactionBuilder", FeeBumpTransactionEnvelope]:
-        """Create a :class:`TransactionBuilder
-        <stellar_sdk.transaction_envelope.TransactionBuilder>` or
-        :py:class:`FeeBumpTransactionEnvelope <stellar_sdk.fee_bump_transaction_envelope.FeeBumpTransactionEnvelope>`
-        via an XDR object.
+    ) -> Union[TransactionEnvelope, FeeBumpTransactionEnvelope]:
+        """When you are not sure whether your XDR belongs to
+        :py:class:`TransactionEnvelope <stellar_sdk.transaction_envelope.TransactionEnvelope>`
+        or :py:class:`FeeBumpTransactionEnvelope <stellar_sdk.fee_bump_transaction_envelope.FeeBumpTransactionEnvelope>`,
+        you can use this function.
 
-        .. warning::
-            I don't recommend you to use this function,
-            because it loses its signature when constructing TransactionBuilder.
-            Please use :py:func:`stellar_sdk.helpers.parse_transaction_envelope_from_xdr` instead.
+        An example::
 
-        In addition, if xdr is not of
-        :py:class:`TransactionEnvelope <stellar_sdk.transaction_envelope.TransactionEnvelope>`,
-        it sets the fields of this builder (the transaction envelope,
-        transaction, operations, source, etc.) to all of the fields in the
-        provided XDR transaction envelope, but the signature will not be added to it.
+            from stellar_sdk import Network, TransactionBuilder
 
-        :param xdr: The XDR object representing the transaction envelope to
-            which this builder is setting its state to.
-        :param network_passphrase: The network to connect to for verifying and retrieving additional attributes from.
-        :return: a :class:`TransactionBuilder <stellar_sdk.transaction_envelope.TransactionBuilder>` or
-            :py:class:`FeeBumpTransactionEnvelope <stellar_sdk.fee_bump_transaction_envelope.FeeBumpTransactionEnvelope>`
-            via the XDR object.
+            xdr = "AAAAAgAAAADHJNEDn33/C1uDkDfzDfKVq/4XE9IxDfGiLCfoV7riZQAAA+gCI4TVABpRPgAAAAAAAAAAAAAAAQAAAAAAAAADAAAAAUxpcmEAAAAAabIaDgm0ypyJpsVfEjZw2mO3Enq4Q4t5URKfWtqukSUAAAABVVNEAAAAAADophqGHmCvYPgHc+BjRuXHLL5Z3K3aN2CNWO9CUR2f3AAAAAAAAAAAE8G9mAADcH8AAAAAMYdBWgAAAAAAAAABV7riZQAAAEARGCGwYk/kEB2Z4UL20y536evnwmmSc4c2FnxlvUcPZl5jgWHcNwY8LTpFhdrUN9TZWciCRp/JCZYa0SJh8cYB"
+            te = TransactionBuilder.from_xdr(xdr, Network.PUBLIC_NETWORK_PASSPHRASE)
+            print(te)
+
+        :param xdr: Transaction envelope XDR
+        :param network_passphrase: The network to connect to for verifying and retrieving
+            additional attributes from. (ex. ``"Public Global Stellar Network ; September 2015"``)
+        :raises: :exc:`ValueError <stellar_sdk.exceptions.ValueError>` - XDR is neither :py:class:`TransactionEnvelope <stellar_sdk.transaction_envelope.TransactionEnvelope>`
+            nor :py:class:`FeeBumpTransactionEnvelope <stellar_sdk.fee_bump_transaction_envelope.FeeBumpTransactionEnvelope>`
         """
-        xdr_object = stellar_xdr.TransactionEnvelope.from_xdr(xdr)
-        te_type = xdr_object.type
-        if te_type == stellar_xdr.EnvelopeType.ENVELOPE_TYPE_TX_FEE_BUMP:
-            return FeeBumpTransactionEnvelope.from_xdr_object(
-                xdr_object, network_passphrase
-            )
-        transaction_envelope = TransactionEnvelope.from_xdr(
-            xdr=xdr, network_passphrase=network_passphrase
-        )
-
-        source_account = Account(
-            transaction_envelope.transaction.source,
-            transaction_envelope.transaction.sequence - 1,
-        )
-        transaction_builder = TransactionBuilder(
-            source_account=source_account,
-            network_passphrase=network_passphrase,
-            base_fee=int(
-                transaction_envelope.transaction.fee
-                / len(transaction_envelope.transaction.operations)
-            ),
-            v1=transaction_envelope.transaction.v1,
-        )
-        if transaction_envelope.transaction.preconditions:
-            transaction_builder.time_bounds = (
-                transaction_envelope.transaction.preconditions.time_bounds
-            )
-        transaction_builder.operations = transaction_envelope.transaction.operations
-        transaction_builder.memo = transaction_envelope.transaction.memo
-        return transaction_builder
+        if FeeBumpTransactionEnvelope.is_fee_bump_transaction_envelope(xdr):
+            return FeeBumpTransactionEnvelope.from_xdr(xdr, network_passphrase)
+        return TransactionEnvelope.from_xdr(xdr, network_passphrase)
 
     def add_time_bounds(self, min_time: int, max_time: int) -> "TransactionBuilder":
         """Sets a timeout precondition on the transaction.
@@ -340,6 +348,22 @@ class TransactionBuilder:
         :return: This builder instance.
         """
         self.min_sequence_ledger_gap = min_sequence_ledger_gap
+        return self
+
+    def set_soroban_data(
+        self, soroban_data: Union[stellar_xdr.SorobanTransactionData, str]
+    ) -> "TransactionBuilder":
+        """Set the SorobanTransactionData. For non-contract(non-Soroban) transactions, this setting has no effect.
+
+        In the case of Soroban transactions, set to an instance of
+        SorobanTransactionData. This can typically be obtained from the simulation
+        response based on a transaction with a InvokeHostFunctionOp.
+        It provides necessary resource estimations for contract invocation.
+
+        :param soroban_data: The SorobanTransactionData as XDR object or base64 encoded string.
+        :return: This builder instance.
+        """
+        self.soroban_data = SorobanDataBuilder.from_xdr(soroban_data).build()
         return self
 
     def add_extra_signer(
@@ -502,7 +526,7 @@ class TransactionBuilder:
         send_max: Union[str, Decimal],
         dest_asset: Asset,
         dest_amount: Union[str, Decimal],
-        path: List[Asset],
+        path: Sequence[Asset],
         source: Optional[Union[MuxedAccount, str]] = None,
     ) -> "TransactionBuilder":
         """Append a :class:`PathPaymentStrictReceive <stellar_sdk.operation.PathPaymentStrictReceive>`
@@ -537,7 +561,7 @@ class TransactionBuilder:
         send_amount: Union[str, Decimal],
         dest_asset: Asset,
         dest_min: Union[str, Decimal],
-        path: List[Asset],
+        path: Sequence[Asset],
         source: Optional[Union[MuxedAccount, str]] = None,
     ) -> "TransactionBuilder":
         """Append a :class:`PathPaymentStrictSend <stellar_sdk.operation.PathPaymentStrictSend>`
@@ -886,7 +910,7 @@ class TransactionBuilder:
         self,
         asset: Asset,
         amount: Union[str, Decimal],
-        claimants: List[Claimant],
+        claimants: Sequence[Claimant],
         source: Optional[Union[MuxedAccount, str]] = None,
     ) -> "TransactionBuilder":
         """Append a :class:`CreateClaimableBalance <stellar_sdk.operation.CreateClaimableBalance>`
@@ -1042,7 +1066,7 @@ class TransactionBuilder:
         source: Optional[Union[MuxedAccount, str]] = None,
     ) -> "TransactionBuilder":
         """Append a :class:`RevokeSponsorship <stellar_sdk.operation.RevokeSponsorship>` operation
-        for a ed25519_public_key signer to the list of operations.
+        for an ed25519_public_key signer to the list of operations.
 
         :param account_id: The account ID where the signer sponsorship is being removed from.
         :param signer_key: The account id of the ed25519_public_key signer.
@@ -1203,7 +1227,243 @@ class TransactionBuilder:
         )
         return self.append_operation(op)
 
-    def __str__(self):
+    def append_invoke_contract_function_op(
+        self,
+        contract_id: str,
+        function_name: str,
+        parameters: Sequence[stellar_xdr.SCVal] = None,
+        auth: Sequence[stellar_xdr.SorobanAuthorizationEntry] = None,
+        source: Optional[Union[MuxedAccount, str]] = None,
+    ) -> "TransactionBuilder":
+        """Append an :class:`InvokeHostFunction <stellar_sdk.operation.InvokeHostFunction>` operation to the list of operations.
+
+        You can use this method to invoke a contract function.
+
+        :param contract_id: The ID of the contract to invoke.
+        :param function_name: The name of the function to invoke.
+        :param parameters: The parameters to pass to the method.
+        :param auth: The authorizations required to execute the host function.
+        :param source: The source account for the operation. Defaults to the
+            transaction's source account.
+        :return: This builder instance.
+        """
+        if not StrKey.is_valid_contract(contract_id):
+            raise ValueError("`contract_id` is invalid.")
+
+        if parameters is None:
+            parameters = []
+
+        host_function = stellar_xdr.HostFunction(
+            stellar_xdr.HostFunctionType.HOST_FUNCTION_TYPE_INVOKE_CONTRACT,
+            invoke_contract=stellar_xdr.InvokeContractArgs(
+                contract_address=Address(contract_id).to_xdr_sc_address(),
+                function_name=stellar_xdr.SCSymbol(
+                    sc_symbol=function_name.encode("utf-8")
+                ),
+                args=list(parameters),
+            ),
+        )
+        op = InvokeHostFunction(host_function=host_function, auth=auth, source=source)
+        return self.append_operation(op)
+
+    def append_upload_contract_wasm_op(
+        self,
+        contract: Union[bytes, str],
+        source: Optional[Union[MuxedAccount, str]] = None,
+    ) -> "TransactionBuilder":
+        """Append an :class:`InvokeHostFunction <stellar_sdk.operation.InvokeHostFunction>` operation to the list of operations.
+
+        You can use this method to install a contract code,
+        and then use :func:`append_create_contract_op` to create a contract.
+
+        :param contract: The contract code to install, path to a file or bytes.
+        :param source: The source account for the operation. Defaults to the
+            transaction's source account.
+        :return: This builder instance.
+        """
+
+        if isinstance(contract, str):
+            with open(contract, "rb") as f:
+                contract = f.read()
+
+        host_function = stellar_xdr.HostFunction(
+            stellar_xdr.HostFunctionType.HOST_FUNCTION_TYPE_UPLOAD_CONTRACT_WASM,
+            wasm=contract,
+        )
+        op = InvokeHostFunction(host_function=host_function, auth=[], source=source)
+        return self.append_operation(op)
+
+    def append_create_contract_op(
+        self,
+        wasm_id: Union[bytes, str],
+        address: Union[str, Address],
+        constructor_args: Optional[Sequence[stellar_xdr.SCVal]] = None,
+        salt: Optional[bytes] = None,
+        auth: Sequence[stellar_xdr.SorobanAuthorizationEntry] = None,
+        source: Optional[Union[MuxedAccount, str]] = None,
+    ) -> "TransactionBuilder":
+        """Append an :class:`InvokeHostFunction <stellar_sdk.operation.InvokeHostFunction>` operation to the list of operations.
+
+        You can use this method to create a contract.
+
+        :param wasm_id: The ID of the contract code to install.
+        :param address: The address using to derive the contract ID.
+        :param constructor_args: The optional parameters to pass to the constructor of this contract.
+        :param salt: The 32-byte salt to use to derive the contract ID.
+        :param auth: The authorizations required to execute the host function.
+        :param source: The source account for the operation. Defaults to the
+            transaction's source account.
+        :return: This builder instance.
+        """
+        if isinstance(wasm_id, str):
+            wasm_id = binascii.unhexlify(wasm_id)
+
+        if salt is None:
+            salt = os.urandom(32)
+        else:
+            if len(salt) != 32:
+                raise ValueError("`salt` must be 32 bytes long")
+
+        if isinstance(address, str):
+            address = Address(address)
+
+        create_contract = stellar_xdr.CreateContractArgsV2(
+            contract_id_preimage=stellar_xdr.ContractIDPreimage(
+                stellar_xdr.ContractIDPreimageType.CONTRACT_ID_PREIMAGE_FROM_ADDRESS,
+                from_address=stellar_xdr.ContractIDPreimageFromAddress(
+                    address=address.to_xdr_sc_address(),
+                    salt=stellar_xdr.Uint256(salt),
+                ),
+            ),
+            executable=stellar_xdr.ContractExecutable(
+                stellar_xdr.ContractExecutableType.CONTRACT_EXECUTABLE_WASM,
+                stellar_xdr.Hash(wasm_id),
+            ),
+            constructor_args=(
+                list(constructor_args) if constructor_args is not None else []
+            ),
+        )
+
+        host_function = stellar_xdr.HostFunction(
+            stellar_xdr.HostFunctionType.HOST_FUNCTION_TYPE_CREATE_CONTRACT_V2,
+            create_contract_v2=create_contract,
+        )
+
+        op = InvokeHostFunction(host_function=host_function, auth=auth, source=source)
+        return self.append_operation(op)
+
+    def append_create_stellar_asset_contract_from_asset_op(
+        self,
+        asset: Asset,
+        source: Optional[Union[MuxedAccount, str]] = None,
+    ) -> "TransactionBuilder":
+        """Append an :class:`InvokeHostFunction <stellar_sdk.operation.InvokeHostFunction>` operation to the list of operations.
+
+        You can use this method to deploy a contract that wraps a classic asset.
+
+        :param asset: The asset to wrap.
+        :param source: The source account for the operation. Defaults to the
+            transaction's source account.
+        :return: This builder instance.
+        """
+        asset_param = asset.to_xdr_object()
+
+        create_contract = stellar_xdr.CreateContractArgs(
+            contract_id_preimage=stellar_xdr.ContractIDPreimage(
+                stellar_xdr.ContractIDPreimageType.CONTRACT_ID_PREIMAGE_FROM_ASSET,
+                from_asset=asset_param,
+            ),
+            executable=stellar_xdr.ContractExecutable(
+                stellar_xdr.ContractExecutableType.CONTRACT_EXECUTABLE_STELLAR_ASSET,
+            ),
+        )
+
+        host_function = stellar_xdr.HostFunction(
+            stellar_xdr.HostFunctionType.HOST_FUNCTION_TYPE_CREATE_CONTRACT,
+            create_contract=create_contract,
+        )
+
+        op = InvokeHostFunction(host_function=host_function, auth=[], source=source)
+        return self.append_operation(op)
+
+    def append_create_stellar_asset_contract_from_address_op(
+        self,
+        address: Union[str, Address],
+        salt: Optional[bytes] = None,
+        auth: Sequence[stellar_xdr.SorobanAuthorizationEntry] = None,
+        source: Optional[Union[MuxedAccount, str]] = None,
+    ) -> "TransactionBuilder":
+        """Append an :class:`InvokeHostFunction <stellar_sdk.operation.InvokeHostFunction>` operation to the list of operations.
+
+        You can use this method to create a new Soroban token contract.
+
+        I do not recommend using this method, please check
+        `the documentation <https://soroban.stellar.org/docs/learn/faq#should-i-issue-my-token-as-a-stellar-asset-or-a-custom-soroban-token>`__ for more information.
+
+        :param address: The address using to derive the contract ID.
+        :param salt: The 32-byte salt to use to derive the contract ID.
+        :param auth: The authorizations required to execute the host function.
+        :param source: The source account for the operation. Defaults to the
+            transaction's source account.
+        :return: This builder instance.
+        """
+        if salt is None:
+            salt = os.urandom(32)
+        else:
+            if len(salt) != 32:
+                raise ValueError("`salt` must be 32 bytes long")
+
+        if isinstance(address, str):
+            address = Address(address)
+
+        create_contract = stellar_xdr.CreateContractArgs(
+            contract_id_preimage=stellar_xdr.ContractIDPreimage(
+                stellar_xdr.ContractIDPreimageType.CONTRACT_ID_PREIMAGE_FROM_ADDRESS,
+                from_address=stellar_xdr.ContractIDPreimageFromAddress(
+                    address=address.to_xdr_sc_address(),
+                    salt=stellar_xdr.Uint256(salt),
+                ),
+            ),
+            executable=stellar_xdr.ContractExecutable(
+                stellar_xdr.ContractExecutableType.CONTRACT_EXECUTABLE_STELLAR_ASSET,
+            ),
+        )
+
+        host_function = stellar_xdr.HostFunction(
+            stellar_xdr.HostFunctionType.HOST_FUNCTION_TYPE_CREATE_CONTRACT,
+            create_contract=create_contract,
+        )
+
+        op = InvokeHostFunction(host_function=host_function, auth=auth, source=source)
+        return self.append_operation(op)
+
+    def append_extend_footprint_ttl_op(
+        self, extend_to: int, source: Optional[Union[MuxedAccount, str]] = None
+    ) -> "TransactionBuilder":
+        """Append an :class:`ExtendFootprintTTL <stellar_sdk.operation.ExtendFootprintTTL>` operation to the list of operations.
+
+        :param extend_to: The number of ledgers past the LCL (last closed ledger)
+            by which to extend the validity of the ledger keys in this transaction.
+        :param source: The source account for the operation. Defaults to the
+            transaction's source account.
+        :return: This builder instance.
+        """
+        op = ExtendFootprintTTL(extend_to=extend_to, source=source)
+        return self.append_operation(op)
+
+    def append_restore_footprint_op(
+        self, source: Optional[Union[MuxedAccount, str]] = None
+    ):
+        """Append an :class:`RestoreFootprint <stellar_sdk.operation.RestoreFootprint>` operation to the list of operations.
+
+        :param source: The source account for the operation. Defaults to the
+            transaction's source account.
+        :return: This builder instance.
+        """
+        op = RestoreFootprint(source)
+        return self.append_operation(op)
+
+    def __repr__(self):
         return (
             f"<TransactionBuilder [source_account={self.source_account}, "
             f"base_fee={self.base_fee}, network_passphrase={self.network_passphrase}, "
@@ -1214,5 +1474,6 @@ class TransactionBuilder:
             f"min_sequence_age={self.min_sequence_age}, "
             f"min_sequence_ledger_gap={self.min_sequence_ledger_gap}, "
             f"extra_signers={self.extra_signers}, "
+            f"soroban_data={self.soroban_data}, "
             f"v1={self.v1}]>"
         )

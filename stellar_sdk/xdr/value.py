@@ -1,7 +1,10 @@
 # This is an automatically generated file.
 # DO NOT EDIT or your changes may be overwritten
+from __future__ import annotations
+
 import base64
-from xdrlib import Packer, Unpacker
+
+from xdrlib3 import Packer, Unpacker
 
 from .base import Opaque
 
@@ -22,7 +25,7 @@ class Value:
         Opaque(self.value, 4294967295, False).pack(packer)
 
     @classmethod
-    def unpack(cls, unpacker: Unpacker) -> "Value":
+    def unpack(cls, unpacker: Unpacker) -> Value:
         value = Opaque.unpack(unpacker, 4294967295, False)
         return cls(value)
 
@@ -32,7 +35,7 @@ class Value:
         return packer.get_buffer()
 
     @classmethod
-    def from_xdr_bytes(cls, xdr: bytes) -> "Value":
+    def from_xdr_bytes(cls, xdr: bytes) -> Value:
         unpacker = Unpacker(xdr)
         return cls.unpack(unpacker)
 
@@ -41,14 +44,17 @@ class Value:
         return base64.b64encode(xdr_bytes).decode()
 
     @classmethod
-    def from_xdr(cls, xdr: str) -> "Value":
+    def from_xdr(cls, xdr: str) -> Value:
         xdr_bytes = base64.b64decode(xdr.encode())
         return cls.from_xdr_bytes(xdr_bytes)
+
+    def __hash__(self):
+        return hash(self.value)
 
     def __eq__(self, other: object):
         if not isinstance(other, self.__class__):
             return NotImplemented
         return self.value == other.value
 
-    def __str__(self):
+    def __repr__(self):
         return f"<Value [value={self.value}]>"

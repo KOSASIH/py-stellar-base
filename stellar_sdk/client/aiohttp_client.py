@@ -3,12 +3,8 @@ import json
 import logging
 from typing import Any, AsyncGenerator, Dict, Optional
 
-import aiohttp
-from aiohttp_sse_client.client import EventSource
-
 from ..__version__ import __version__
 from ..exceptions import ConnectionError, StreamClientError
-from ..type_checked import type_checked
 from . import defines
 from .base_async_client import BaseAsyncClient
 from .response import Response
@@ -59,10 +55,16 @@ async def __readline(self) -> bytes:
     return b"".join(line)
 
 
-aiohttp.streams.StreamReader.readline = __readline  # type: ignore[assignment]
+try:
+    import aiohttp
+    from aiohttp_sse_client.client import EventSource
+
+    aiohttp.streams.StreamReader.readline = __readline  # type: ignore[assignment]
+    _AIOHTTP_DEPS_INSTALLED = True
+except ImportError:
+    _AIOHTTP_DEPS_INSTALLED = False
 
 
-@type_checked
 class AiohttpClient(BaseAsyncClient):
     """The :class:`AiohttpClient` object is a asynchronous http client,
     which represents the interface for making requests to a server instance.
@@ -85,15 +87,16 @@ class AiohttpClient(BaseAsyncClient):
         custom_headers: Optional[Dict[str, str]] = None,
         **kwargs,
     ) -> None:
+        if not _AIOHTTP_DEPS_INSTALLED:
+            raise ImportError(
+                "The required dependencies have not been installed. "
+                "Please install `stellar-sdk[aiohttp]` to use this feature."
+            )
         self.pool_size = pool_size
         self.backoff_factor: Optional[float] = backoff_factor
         self.request_timeout: float = request_timeout
         self.post_timeout: float = post_timeout
-        # init session
-        if pool_size is None:
-            connector = aiohttp.TCPConnector()
-        else:
-            connector = aiohttp.TCPConnector(limit=pool_size)
+        self.__kwargs = kwargs
 
         self.user_agent: Optional[str] = USER_AGENT
         if user_agent:
@@ -101,21 +104,13 @@ class AiohttpClient(BaseAsyncClient):
 
         self.headers: dict = {
             **IDENTIFICATION_HEADERS,
-            "Content-Type": "application/x-www-form-urlencoded",
             "User-Agent": self.user_agent,
         }
 
         if custom_headers:
             self.headers = {**self.headers, **custom_headers}
 
-        session = aiohttp.ClientSession(
-            headers=self.headers.copy(),
-            connector=connector,
-            timeout=aiohttp.ClientTimeout(total=request_timeout),
-            **kwargs,
-        )
-
-        self._session: aiohttp.ClientSession = session
+        self._session: Optional[aiohttp.ClientSession] = None
         self._sse_session: Optional[aiohttp.ClientSession] = None
 
     async def get(self, url: str, params: Dict[str, str] = None) -> Response:
@@ -126,6 +121,8 @@ class AiohttpClient(BaseAsyncClient):
         :return: the response from server
         :raise: :exc:`ConnectionError <stellar_sdk.exceptions.ConnectionError>`
         """
+        await self.__init_session()
+        assert self._session is not None
         try:
             response = await self._session.get(url, params=params)
             return Response(
@@ -137,17 +134,25 @@ class AiohttpClient(BaseAsyncClient):
         except aiohttp.ClientError as e:  # TODO: need more research
             raise ConnectionError(e)
 
-    async def post(self, url: str, data: Dict[str, str] = None) -> Response:
+    async def post(
+        self, url: str, data: Dict[str, str] = None, json_data: Dict[str, Any] = None
+    ) -> Response:
         """Perform HTTP POST request.
 
         :param url: the request url
         :param data: the data send to server
+        :param json_data: the json data send to server
         :return: the response from server
         :raise: :exc:`ConnectionError <stellar_sdk.exceptions.ConnectionError>`
         """
+        await self.__init_session()
+        assert self._session is not None
         try:
             response = await self._session.post(
-                url, data=data, timeout=aiohttp.ClientTimeout(total=self.post_timeout)
+                url,
+                data=data,
+                json=json_data,
+                timeout=aiohttp.ClientTimeout(total=self.post_timeout),
             )
             return Response(
                 status_code=response.status,
@@ -223,6 +228,21 @@ class AiohttpClient(BaseAsyncClient):
                 )
                 await asyncio.sleep(retry)
 
+    async def __init_session(self):
+        # init session
+        if self._session is None:
+            if self.pool_size is None:
+                connector = aiohttp.TCPConnector()
+            else:
+                connector = aiohttp.TCPConnector(limit=self.pool_size)
+
+            self._session = aiohttp.ClientSession(
+                headers=self.headers.copy(),
+                connector=connector,
+                timeout=aiohttp.ClientTimeout(total=self.request_timeout),
+                **self.__kwargs,
+            )
+
     async def __aenter__(self) -> "AiohttpClient":
         return self
 
@@ -234,11 +254,12 @@ class AiohttpClient(BaseAsyncClient):
 
         Release all acquired resources.
         """
-        await self._session.__aexit__(None, None, None)
+        if self._session is not None:
+            await self._session.__aexit__(None, None, None)
         if self._sse_session is not None:
             await self._sse_session.__aexit__(None, None, None)
 
-    def __str__(self):
+    def __repr__(self):
         return (
             f"<AiohttpClient [pool_size={self.pool_size}, "
             f"request_timeout={self.request_timeout}, "

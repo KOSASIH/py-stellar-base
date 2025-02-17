@@ -1,7 +1,10 @@
 # This is an automatically generated file.
 # DO NOT EDIT or your changes may be overwritten
+from __future__ import annotations
+
 import base64
-from xdrlib import Packer, Unpacker
+
+from xdrlib3 import Packer, Unpacker
 
 from .base import Integer
 from .trust_line_entry_v1 import TrustLineEntryV1
@@ -53,7 +56,7 @@ class TrustLineEntryExt:
             return
 
     @classmethod
-    def unpack(cls, unpacker: Unpacker) -> "TrustLineEntryExt":
+    def unpack(cls, unpacker: Unpacker) -> TrustLineEntryExt:
         v = Integer.unpack(unpacker)
         if v == 0:
             return cls(v=v)
@@ -68,7 +71,7 @@ class TrustLineEntryExt:
         return packer.get_buffer()
 
     @classmethod
-    def from_xdr_bytes(cls, xdr: bytes) -> "TrustLineEntryExt":
+    def from_xdr_bytes(cls, xdr: bytes) -> TrustLineEntryExt:
         unpacker = Unpacker(xdr)
         return cls.unpack(unpacker)
 
@@ -77,16 +80,24 @@ class TrustLineEntryExt:
         return base64.b64encode(xdr_bytes).decode()
 
     @classmethod
-    def from_xdr(cls, xdr: str) -> "TrustLineEntryExt":
+    def from_xdr(cls, xdr: str) -> TrustLineEntryExt:
         xdr_bytes = base64.b64decode(xdr.encode())
         return cls.from_xdr_bytes(xdr_bytes)
+
+    def __hash__(self):
+        return hash(
+            (
+                self.v,
+                self.v1,
+            )
+        )
 
     def __eq__(self, other: object):
         if not isinstance(other, self.__class__):
             return NotImplemented
         return self.v == other.v and self.v1 == other.v1
 
-    def __str__(self):
+    def __repr__(self):
         out = []
         out.append(f"v={self.v}")
         out.append(f"v1={self.v1}") if self.v1 is not None else None

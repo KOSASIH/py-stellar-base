@@ -1,6 +1,7 @@
 import copy
-from typing import List, Union
-from xdrlib import Packer
+from typing import Sequence, Union
+
+from xdrlib3 import Packer
 
 from . import xdr as stellar_xdr
 from .base_transaction_envelope import BaseTransactionEnvelope
@@ -9,12 +10,10 @@ from .exceptions import SignatureExistError
 from .keypair import Keypair
 from .signer_key import SignerKeyType
 from .transaction import Transaction
-from .type_checked import type_checked
 
 __all__ = ["TransactionEnvelope"]
 
 
-@type_checked
 class TransactionEnvelope(BaseTransactionEnvelope["TransactionEnvelope"]):
     """The :class:`TransactionEnvelope` object, which represents a transaction
     envelope ready to sign and submit to send over the network.
@@ -35,7 +34,7 @@ class TransactionEnvelope(BaseTransactionEnvelope["TransactionEnvelope"]):
         self,
         transaction: Transaction,
         network_passphrase: str,
-        signatures: List[DecoratedSignature] = None,
+        signatures: Sequence[DecoratedSignature] = None,
     ) -> None:
         super().__init__(network_passphrase, signatures)
         self.transaction: Transaction = transaction
@@ -152,12 +151,19 @@ class TransactionEnvelope(BaseTransactionEnvelope["TransactionEnvelope"]):
         te = cls(tx, network_passphrase=network_passphrase, signatures=signatures)
         return te
 
+    def __hash__(self):
+        return hash((self.transaction, self.network_passphrase, self.signatures))
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
             return NotImplemented
-        return self.to_xdr_object() == other.to_xdr_object()
+        return (
+            self.transaction == other.transaction
+            and self.network_passphrase == other.network_passphrase
+            and self.signatures == other.signatures
+        )
 
-    def __str__(self):
+    def __repr__(self):
         return (
             f"<TransactionEnvelope [transaction={self.transaction}, "
             f"network_passphrase={self.network_passphrase}, signatures={self.signatures}]>"

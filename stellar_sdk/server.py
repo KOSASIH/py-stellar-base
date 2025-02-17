@@ -16,13 +16,11 @@ from .memo import NoneMemo
 from .muxed_account import MuxedAccount
 from .transaction import Transaction
 from .transaction_envelope import TransactionEnvelope
-from .type_checked import type_checked
 from .utils import MUXED_ACCOUNT_STARTING_LETTER, urljoin_with_query
 
 __all__ = ["Server"]
 
 
-@type_checked
 class Server(BaseServer):
     """Server handles the network connection to a `Horizon <https://developers.stellar.org/api/introduction/>`_
     instance and exposes an interface for requests to that instance.
@@ -74,6 +72,43 @@ class Server(BaseServer):
             :exc:`AccountRequiresMemoError <stellar_sdk.sep.exceptions.AccountRequiresMemoError>`
         """
         url = urljoin_with_query(self.horizon_url, "transactions")
+        xdr, tx = self._get_xdr_and_transaction_from_transaction_envelope(
+            transaction_envelope
+        )
+        if not skip_memo_required_check:
+            self.__check_memo_required_sync(tx)
+        data = {"tx": xdr}
+        resp = self._client.post(url=url, data=data)
+        assert isinstance(resp, Response)
+        raise_request_exception(resp)
+        return resp.json()
+
+    def submit_transaction_async(
+        self,
+        transaction_envelope: Union[
+            TransactionEnvelope, FeeBumpTransactionEnvelope, str
+        ],
+        skip_memo_required_check: bool = False,
+    ) -> Dict[str, Any]:
+        """Submits an asynchronous transaction to the network. Unlike the synchronous version, which blocks
+        and waits for the transaction to be ingested in Horizon, this endpoint relays the response from
+        core directly back to the user.
+
+        See `Horizon Documentation - Submit a Transaction Asynchronously <https://developers.stellar.org/docs/data/horizon/api-reference/resources/submit-async-transaction>`_
+
+        :param transaction_envelope: :class:`stellar_sdk.transaction_envelope.TransactionEnvelope` object
+            or base64 encoded xdr
+        :param skip_memo_required_check: Allow skipping memo
+        :return: the response from horizon
+        :raises:
+            :exc:`ConnectionError <stellar_sdk.exceptions.ConnectionError>`
+            :exc:`NotFoundError <stellar_sdk.exceptions.NotFoundError>`
+            :exc:`BadRequestError <stellar_sdk.exceptions.BadRequestError>`
+            :exc:`BadResponseError <stellar_sdk.exceptions.BadResponseError>`
+            :exc:`UnknownRequestError <stellar_sdk.exceptions.UnknownRequestError>`
+            :exc:`AccountRequiresMemoError <stellar_sdk.sep.exceptions.AccountRequiresMemoError>`
+        """
+        url = urljoin_with_query(self.horizon_url, "transactions_async")
         xdr, tx = self._get_xdr_and_transaction_from_transaction_envelope(
             transaction_envelope
         )
@@ -355,5 +390,5 @@ class Server(BaseServer):
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
-    def __str__(self):
+    def __repr__(self):
         return f"<Server [horizon_url={self.horizon_url}, client={self._client}]>"

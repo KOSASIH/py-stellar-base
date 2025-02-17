@@ -1,26 +1,26 @@
 from abc import abstractmethod
-from typing import Generic, List, TypeVar, Union
+from typing import Generic, List, Sequence, TypeVar, Union
 
 from . import xdr as stellar_xdr
 from .decorated_signature import DecoratedSignature
 from .exceptions import SignatureExistError
 from .keypair import Keypair
 from .network import Network
-from .type_checked import type_checked
 from .utils import hex_to_bytes, sha256
 
 T = TypeVar("T")
 
 
-@type_checked
 class BaseTransactionEnvelope(Generic[T]):
     def __init__(
         self,
         network_passphrase: str,
-        signatures: List[DecoratedSignature] = None,
+        signatures: Sequence[DecoratedSignature] = None,
     ) -> None:
         self.network_passphrase: str = network_passphrase
-        self.signatures: List[DecoratedSignature] = signatures or []
+        self.signatures: List[DecoratedSignature] = (
+            list(signatures) if signatures else []
+        )
         self._network_id: bytes = Network(network_passphrase).network_id()
 
     def hash(self) -> bytes:
@@ -137,10 +137,14 @@ class BaseTransactionEnvelope(Generic[T]):
         return cls.from_xdr_object(xdr_object, network_passphrase)
 
     @abstractmethod
+    def __hash__(self):
+        pass  # pragma: no cover
+
+    @abstractmethod
     def __eq__(self, other: object) -> bool:
         pass  # pragma: no cover
 
-    def __str__(self):
+    def __repr__(self):
         return (
             f"<BaseTransactionEnvelope [network_passphrase={self.network_passphrase}, "
             f"signatures={self.signatures}]>"

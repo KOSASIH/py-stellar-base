@@ -2,13 +2,11 @@ from typing import Optional, Union
 
 from .. import xdr as stellar_xdr
 from ..muxed_account import MuxedAccount
-from ..type_checked import type_checked
 from .operation import Operation
 
 __all__ = ["AccountMerge"]
 
 
-@type_checked
 class AccountMerge(Operation):
     """The :class:`AccountMerge` object, which represents a
     AccountMerge operation on Stellar's network.
@@ -58,5 +56,5 @@ class AccountMerge(Operation):
         op = cls(source=source, destination=destination)
         return op
 
-    def __str__(self):
+    def __repr__(self):
         return f"<AccountMerge [destination={self.destination}, source={self.source}]>"

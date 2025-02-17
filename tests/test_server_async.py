@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 import pytest
+from aioresponses import aioresponses
 
 from stellar_sdk import (
     AiohttpClient,
@@ -149,7 +150,7 @@ class TestServerAsync:
             assert server.transactions() == TransactionsCallBuilder(horizon_url, client)
 
     async def test_submit_transaction_with_xdr(self):
-        xdr = "AAAAAHI7fpgo+b7tgpiFyYWimjV7L7IOYLwmQS7k7F8SronXAAAAZAE+QT4AAAAJAAAAAQAAAAAAAAAAAAAAAF1MG8cAAAAAAAAAAQAAAAAAAAAAAAAAAOvi1O/HEn+QgZJw+EMZBtwvTVNmpgvE9p8IRfwp0GY4AAAAAAExLQAAAAAAAAAAARKuidcAAABAJVc1ASGp35hUquGNbzzSqWPoTG0zgc89zc4p+19QkgbPqsdyEfHs7+ng9VJA49YneEXRa6Fv7pfKpEigb3VTCg=="
+        xdr = "AAAAAgAAAACpYAfsZFw9X5E2fHFl+xYB3D9dxwhtVPZ6c8QW/7KNxAAAAGQDBJRXAAYt2AAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAwAAAAAAAAABVVNEQwAAAAA7mRE4Dv6Yi6CokA6xz+RPNm99vpRr7QdyQPf2JN8VxQAAAAAATEShAA9I5QCYloAAAAAAX5K4WgAAAAAAAAAB/7KNxAAAAEChPdaEabaexQ6vjiJxI0ECXuK97fidU4a8l0/iK6ORCAQ+NGeBAIfaLAZiyww+I/nWEqrihn8zdN+wNdUUoDgF"
         horizon_url = "https://horizon.stellar.org"
         client = AiohttpClient()
         async with ServerAsync(horizon_url, client) as server:
@@ -157,10 +158,58 @@ class TestServerAsync:
             assert resp["envelope_xdr"] == xdr
 
     async def test_submit_transaction_with_te(self):
-        xdr = "AAAAAHI7fpgo+b7tgpiFyYWimjV7L7IOYLwmQS7k7F8SronXAAAAZAE+QT4AAAAJAAAAAQAAAAAAAAAAAAAAAF1MG8cAAAAAAAAAAQAAAAAAAAAAAAAAAOvi1O/HEn+QgZJw+EMZBtwvTVNmpgvE9p8IRfwp0GY4AAAAAAExLQAAAAAAAAAAARKuidcAAABAJVc1ASGp35hUquGNbzzSqWPoTG0zgc89zc4p+19QkgbPqsdyEfHs7+ng9VJA49YneEXRa6Fv7pfKpEigb3VTCg=="
+        xdr = "AAAAAgAAAACpYAfsZFw9X5E2fHFl+xYB3D9dxwhtVPZ6c8QW/7KNxAAAAGQDBJRXAAYt2AAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAwAAAAAAAAABVVNEQwAAAAA7mRE4Dv6Yi6CokA6xz+RPNm99vpRr7QdyQPf2JN8VxQAAAAAATEShAA9I5QCYloAAAAAAX5K4WgAAAAAAAAAB/7KNxAAAAEChPdaEabaexQ6vjiJxI0ECXuK97fidU4a8l0/iK6ORCAQ+NGeBAIfaLAZiyww+I/nWEqrihn8zdN+wNdUUoDgF"
         te = TransactionEnvelope.from_xdr(xdr, Network.PUBLIC_NETWORK_PASSPHRASE)
         horizon_url = "https://horizon.stellar.org"
         client = AiohttpClient()
         async with ServerAsync(horizon_url, client) as server:
             resp = await server.submit_transaction(te, True)
             assert resp["envelope_xdr"] == xdr
+
+    async def test_submit_transaction_async_with_xdr(self):
+        xdr = "AAAAAHI7fpgo+b7tgpiFyYWimjV7L7IOYLwmQS7k7F8SronXAAAAZAE+QT4AAAAJAAAAAQAAAAAAAAAAAAAAAF1MG8cAAAAAAAAAAQAAAAAAAAAAAAAAAOvi1O/HEn+QgZJw+EMZBtwvTVNmpgvE9p8IRfwp0GY4AAAAAAExLQAAAAAAAAAAARKuidcAAABAJVc1ASGp35hUquGNbzzSqWPoTG0zgc89zc4p+19QkgbPqsdyEfHs7+ng9VJA49YneEXRa6Fv7pfKpEigb3VTCg=="
+        horizon_url = "https://horizon.stellar.org"
+        client = AiohttpClient()
+        te = TransactionEnvelope.from_xdr(xdr, Network.PUBLIC_NETWORK_PASSPHRASE)
+        assert (
+            te.hash_hex()
+            == "c1d2d2b16afb3313cea19f9854ffc095a18baf2d04508ef6d367a72928231084"
+        )
+        data = {
+            "tx_status": "PENDING",
+            "hash": "c1d2d2b16afb3313cea19f9854ffc095a18baf2d04508ef6d367a72928231084",
+        }
+
+        with aioresponses() as m:
+            m.post(f"{horizon_url}/transactions_async", payload=data)
+            async with ServerAsync(horizon_url, client) as server:
+                resp = await server.submit_transaction_async(xdr, True)
+                assert (
+                    resp["hash"]
+                    == "c1d2d2b16afb3313cea19f9854ffc095a18baf2d04508ef6d367a72928231084"
+                )
+                assert resp["tx_status"] == "PENDING"
+
+    async def test_submit_transaction_async_with_te(self):
+        xdr = "AAAAAHI7fpgo+b7tgpiFyYWimjV7L7IOYLwmQS7k7F8SronXAAAAZAE+QT4AAAAJAAAAAQAAAAAAAAAAAAAAAF1MG8cAAAAAAAAAAQAAAAAAAAAAAAAAAOvi1O/HEn+QgZJw+EMZBtwvTVNmpgvE9p8IRfwp0GY4AAAAAAExLQAAAAAAAAAAARKuidcAAABAJVc1ASGp35hUquGNbzzSqWPoTG0zgc89zc4p+19QkgbPqsdyEfHs7+ng9VJA49YneEXRa6Fv7pfKpEigb3VTCg=="
+        horizon_url = "https://horizon.stellar.org"
+        client = AiohttpClient()
+        te = TransactionEnvelope.from_xdr(xdr, Network.PUBLIC_NETWORK_PASSPHRASE)
+        assert (
+            te.hash_hex()
+            == "c1d2d2b16afb3313cea19f9854ffc095a18baf2d04508ef6d367a72928231084"
+        )
+        data = {
+            "tx_status": "PENDING",
+            "hash": "c1d2d2b16afb3313cea19f9854ffc095a18baf2d04508ef6d367a72928231084",
+        }
+
+        with aioresponses() as m:
+            m.post(f"{horizon_url}/transactions_async", payload=data)
+            async with ServerAsync(horizon_url, client) as server:
+                resp = await server.submit_transaction_async(te, True)
+                assert (
+                    resp["hash"]
+                    == "c1d2d2b16afb3313cea19f9854ffc095a18baf2d04508ef6d367a72928231084"
+                )
+                assert resp["tx_status"] == "PENDING"

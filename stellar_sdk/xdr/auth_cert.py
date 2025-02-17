@@ -1,7 +1,10 @@
 # This is an automatically generated file.
 # DO NOT EDIT or your changes may be overwritten
+from __future__ import annotations
+
 import base64
-from xdrlib import Packer, Unpacker
+
+from xdrlib3 import Packer, Unpacker
 
 from .curve25519_public import Curve25519Public
 from .signature import Signature
@@ -38,7 +41,7 @@ class AuthCert:
         self.sig.pack(packer)
 
     @classmethod
-    def unpack(cls, unpacker: Unpacker) -> "AuthCert":
+    def unpack(cls, unpacker: Unpacker) -> AuthCert:
         pubkey = Curve25519Public.unpack(unpacker)
         expiration = Uint64.unpack(unpacker)
         sig = Signature.unpack(unpacker)
@@ -54,7 +57,7 @@ class AuthCert:
         return packer.get_buffer()
 
     @classmethod
-    def from_xdr_bytes(cls, xdr: bytes) -> "AuthCert":
+    def from_xdr_bytes(cls, xdr: bytes) -> AuthCert:
         unpacker = Unpacker(xdr)
         return cls.unpack(unpacker)
 
@@ -63,9 +66,18 @@ class AuthCert:
         return base64.b64encode(xdr_bytes).decode()
 
     @classmethod
-    def from_xdr(cls, xdr: str) -> "AuthCert":
+    def from_xdr(cls, xdr: str) -> AuthCert:
         xdr_bytes = base64.b64decode(xdr.encode())
         return cls.from_xdr_bytes(xdr_bytes)
+
+    def __hash__(self):
+        return hash(
+            (
+                self.pubkey,
+                self.expiration,
+                self.sig,
+            )
+        )
 
     def __eq__(self, other: object):
         if not isinstance(other, self.__class__):
@@ -76,7 +88,7 @@ class AuthCert:
             and self.sig == other.sig
         )
 
-    def __str__(self):
+    def __repr__(self):
         out = [
             f"pubkey={self.pubkey}",
             f"expiration={self.expiration}",

@@ -1,7 +1,10 @@
 # This is an automatically generated file.
 # DO NOT EDIT or your changes may be overwritten
+from __future__ import annotations
+
 import base64
-from xdrlib import Packer, Unpacker
+
+from xdrlib3 import Packer, Unpacker
 
 from .signature import Signature
 from .signature_hint import SignatureHint
@@ -33,7 +36,7 @@ class DecoratedSignature:
         self.signature.pack(packer)
 
     @classmethod
-    def unpack(cls, unpacker: Unpacker) -> "DecoratedSignature":
+    def unpack(cls, unpacker: Unpacker) -> DecoratedSignature:
         hint = SignatureHint.unpack(unpacker)
         signature = Signature.unpack(unpacker)
         return cls(
@@ -47,7 +50,7 @@ class DecoratedSignature:
         return packer.get_buffer()
 
     @classmethod
-    def from_xdr_bytes(cls, xdr: bytes) -> "DecoratedSignature":
+    def from_xdr_bytes(cls, xdr: bytes) -> DecoratedSignature:
         unpacker = Unpacker(xdr)
         return cls.unpack(unpacker)
 
@@ -56,16 +59,24 @@ class DecoratedSignature:
         return base64.b64encode(xdr_bytes).decode()
 
     @classmethod
-    def from_xdr(cls, xdr: str) -> "DecoratedSignature":
+    def from_xdr(cls, xdr: str) -> DecoratedSignature:
         xdr_bytes = base64.b64decode(xdr.encode())
         return cls.from_xdr_bytes(xdr_bytes)
+
+    def __hash__(self):
+        return hash(
+            (
+                self.hint,
+                self.signature,
+            )
+        )
 
     def __eq__(self, other: object):
         if not isinstance(other, self.__class__):
             return NotImplemented
         return self.hint == other.hint and self.signature == other.signature
 
-    def __str__(self):
+    def __repr__(self):
         out = [
             f"hint={self.hint}",
             f"signature={self.signature}",

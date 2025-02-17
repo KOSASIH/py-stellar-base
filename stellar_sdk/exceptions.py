@@ -2,13 +2,9 @@ from json import JSONDecodeError
 from typing import Optional
 
 from .client.response import Response
-from .type_checked import type_checked
 
 __all__ = [
     "SdkError",
-    "ValueError",
-    "TypeError",
-    "AttributeError",
     "BadSignatureError",
     "Ed25519PublicKeyInvalidError",
     "Ed25519SecretSeedInvalidError",
@@ -29,13 +25,12 @@ __all__ = [
     "NotPageableError",
     "StreamClientError",
     "FeatureNotEnabledError",
+    "SorobanRpcErrorResponse",
+    "AccountNotFoundException",
+    "PrepareTransactionException",
 ]
 
-
-# The following is kept for compatibility
-ValueError = ValueError
-TypeError = TypeError
-AttributeError = AttributeError
+from .soroban_rpc import SimulateTransactionResponse
 
 
 class SdkError(Exception):
@@ -113,7 +108,7 @@ class BaseHorizonError(BaseRequestError):
         self.extras: Optional[dict] = message.get("extras")
         self.result_xdr: Optional[str] = message.get("extras", {}).get("result_xdr")
 
-    def __str__(self):
+    def __repr__(self):
         return self.message
 
 
@@ -172,10 +167,40 @@ class FeatureNotEnabledError(SdkError):
     """The feature is not enabled."""
 
 
-@type_checked
+class SorobanRpcErrorResponse(BaseRequestError):
+    """The exception is thrown when the RPC server returns an error response."""
+
+    def __init__(
+        self, code: int, message: Optional[str], data: Optional[str] = None
+    ) -> None:
+        super().__init__(message)
+        self.code = code
+        self.data = data
+        self.message = message
+
+
+class AccountNotFoundException(SdkError):
+    """The exception is thrown when trying to load an account that doesn't exist on the Stellar network."""
+
+    def __init__(self, account_id: str) -> None:
+        super().__init__(f"Account not found, account_id: {account_id}")
+        self.account_id = account_id
+
+
+class PrepareTransactionException(SdkError):
+    """The exception is thrown when trying to prepare a transaction."""
+
+    def __init__(
+        self, message: str, simulate_transaction_response: SimulateTransactionResponse
+    ) -> None:
+        super().__init__(message)
+        self.message = message
+        self.simulate_transaction_response = simulate_transaction_response
+
+
 def raise_request_exception(response: Response) -> None:
     status_code = response.status_code
-    if status_code == 200:
+    if 200 <= status_code < 300:
         pass  # pragma: no cover
     elif status_code == 404:
         raise NotFoundError(response)

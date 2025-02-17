@@ -1,11 +1,8 @@
 import json
 
-from ..type_checked import type_checked
-
 __all__ = ["Response"]
 
 
-@type_checked
 class Response:
     """The :class:`Response <Response>` object, which contains a
     server's response to an HTTP request.
@@ -29,6 +26,11 @@ class Response:
         """
         return json.loads(self.text)
 
+    def __hash__(self):
+        return hash(
+            (self.status_code, self.text, tuple(self.headers.items()), self.url)
+        )
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
             return NotImplemented
@@ -39,7 +41,7 @@ class Response:
             and self.url == other.url
         )
 
-    def __str__(self):
+    def __repr__(self):
         return (
             f"<Response [status_code={self.status_code}, "
             f"text={self.text}, "

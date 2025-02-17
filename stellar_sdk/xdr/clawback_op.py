@@ -1,7 +1,10 @@
 # This is an automatically generated file.
 # DO NOT EDIT or your changes may be overwritten
+from __future__ import annotations
+
 import base64
-from xdrlib import Packer, Unpacker
+
+from xdrlib3 import Packer, Unpacker
 
 from .asset import Asset
 from .int64 import Int64
@@ -38,7 +41,7 @@ class ClawbackOp:
         self.amount.pack(packer)
 
     @classmethod
-    def unpack(cls, unpacker: Unpacker) -> "ClawbackOp":
+    def unpack(cls, unpacker: Unpacker) -> ClawbackOp:
         asset = Asset.unpack(unpacker)
         from_ = MuxedAccount.unpack(unpacker)
         amount = Int64.unpack(unpacker)
@@ -54,7 +57,7 @@ class ClawbackOp:
         return packer.get_buffer()
 
     @classmethod
-    def from_xdr_bytes(cls, xdr: bytes) -> "ClawbackOp":
+    def from_xdr_bytes(cls, xdr: bytes) -> ClawbackOp:
         unpacker = Unpacker(xdr)
         return cls.unpack(unpacker)
 
@@ -63,9 +66,18 @@ class ClawbackOp:
         return base64.b64encode(xdr_bytes).decode()
 
     @classmethod
-    def from_xdr(cls, xdr: str) -> "ClawbackOp":
+    def from_xdr(cls, xdr: str) -> ClawbackOp:
         xdr_bytes = base64.b64decode(xdr.encode())
         return cls.from_xdr_bytes(xdr_bytes)
+
+    def __hash__(self):
+        return hash(
+            (
+                self.asset,
+                self.from_,
+                self.amount,
+            )
+        )
 
     def __eq__(self, other: object):
         if not isinstance(other, self.__class__):
@@ -76,7 +88,7 @@ class ClawbackOp:
             and self.amount == other.amount
         )
 
-    def __str__(self):
+    def __repr__(self):
         out = [
             f"asset={self.asset}",
             f"from_={self.from_}",

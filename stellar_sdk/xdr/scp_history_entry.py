@@ -1,7 +1,10 @@
 # This is an automatically generated file.
 # DO NOT EDIT or your changes may be overwritten
+from __future__ import annotations
+
 import base64
-from xdrlib import Packer, Unpacker
+
+from xdrlib3 import Packer, Unpacker
 
 from .base import Integer
 from .scp_history_entry_v0 import SCPHistoryEntryV0
@@ -37,7 +40,7 @@ class SCPHistoryEntry:
             return
 
     @classmethod
-    def unpack(cls, unpacker: Unpacker) -> "SCPHistoryEntry":
+    def unpack(cls, unpacker: Unpacker) -> SCPHistoryEntry:
         v = Integer.unpack(unpacker)
         if v == 0:
             v0 = SCPHistoryEntryV0.unpack(unpacker)
@@ -50,7 +53,7 @@ class SCPHistoryEntry:
         return packer.get_buffer()
 
     @classmethod
-    def from_xdr_bytes(cls, xdr: bytes) -> "SCPHistoryEntry":
+    def from_xdr_bytes(cls, xdr: bytes) -> SCPHistoryEntry:
         unpacker = Unpacker(xdr)
         return cls.unpack(unpacker)
 
@@ -59,16 +62,24 @@ class SCPHistoryEntry:
         return base64.b64encode(xdr_bytes).decode()
 
     @classmethod
-    def from_xdr(cls, xdr: str) -> "SCPHistoryEntry":
+    def from_xdr(cls, xdr: str) -> SCPHistoryEntry:
         xdr_bytes = base64.b64decode(xdr.encode())
         return cls.from_xdr_bytes(xdr_bytes)
+
+    def __hash__(self):
+        return hash(
+            (
+                self.v,
+                self.v0,
+            )
+        )
 
     def __eq__(self, other: object):
         if not isinstance(other, self.__class__):
             return NotImplemented
         return self.v == other.v and self.v0 == other.v0
 
-    def __str__(self):
+    def __repr__(self):
         out = []
         out.append(f"v={self.v}")
         out.append(f"v0={self.v0}") if self.v0 is not None else None

@@ -1,7 +1,10 @@
 # This is an automatically generated file.
 # DO NOT EDIT or your changes may be overwritten
+from __future__ import annotations
+
 import base64
-from xdrlib import Packer, Unpacker
+
+from xdrlib3 import Packer, Unpacker
 
 from .alpha_num4 import AlphaNum4
 from .alpha_num12 import AlphaNum12
@@ -55,7 +58,7 @@ class Asset:
             return
 
     @classmethod
-    def unpack(cls, unpacker: Unpacker) -> "Asset":
+    def unpack(cls, unpacker: Unpacker) -> Asset:
         type = AssetType.unpack(unpacker)
         if type == AssetType.ASSET_TYPE_NATIVE:
             return cls(type=type)
@@ -73,7 +76,7 @@ class Asset:
         return packer.get_buffer()
 
     @classmethod
-    def from_xdr_bytes(cls, xdr: bytes) -> "Asset":
+    def from_xdr_bytes(cls, xdr: bytes) -> Asset:
         unpacker = Unpacker(xdr)
         return cls.unpack(unpacker)
 
@@ -82,9 +85,18 @@ class Asset:
         return base64.b64encode(xdr_bytes).decode()
 
     @classmethod
-    def from_xdr(cls, xdr: str) -> "Asset":
+    def from_xdr(cls, xdr: str) -> Asset:
         xdr_bytes = base64.b64decode(xdr.encode())
         return cls.from_xdr_bytes(xdr_bytes)
+
+    def __hash__(self):
+        return hash(
+            (
+                self.type,
+                self.alpha_num4,
+                self.alpha_num12,
+            )
+        )
 
     def __eq__(self, other: object):
         if not isinstance(other, self.__class__):
@@ -95,13 +107,17 @@ class Asset:
             and self.alpha_num12 == other.alpha_num12
         )
 
-    def __str__(self):
+    def __repr__(self):
         out = []
         out.append(f"type={self.type}")
-        out.append(
-            f"alpha_num4={self.alpha_num4}"
-        ) if self.alpha_num4 is not None else None
-        out.append(
-            f"alpha_num12={self.alpha_num12}"
-        ) if self.alpha_num12 is not None else None
+        (
+            out.append(f"alpha_num4={self.alpha_num4}")
+            if self.alpha_num4 is not None
+            else None
+        )
+        (
+            out.append(f"alpha_num12={self.alpha_num12}")
+            if self.alpha_num12 is not None
+            else None
+        )
         return f"<Asset [{', '.join(out)}]>"

@@ -1,14 +1,11 @@
 import binascii
 
 from . import xdr as stellar_xdr
-from .exceptions import ValueError
-from .type_checked import type_checked
 from .utils import raise_if_not_valid_hash
 
 __all__ = ["LiquidityPoolId"]
 
 
-@type_checked
 class LiquidityPoolId:
     """The :class:`LiquidityPoolId` object, which represents the asset referenced by a trustline to a liquidity pool.
 
@@ -48,10 +45,13 @@ class LiquidityPoolId:
         liquidity_pool_id = xdr_object.liquidity_pool_id.pool_id.hash.hex()
         return cls(liquidity_pool_id)
 
+    def __hash__(self):
+        return hash((self.liquidity_pool_id, self.type))
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
             return NotImplemented
         return self.liquidity_pool_id == other.liquidity_pool_id
 
-    def __str__(self):
+    def __repr__(self):
         return f"<LiquidityPoolId [liquidity_pool_id={self.liquidity_pool_id}]>"

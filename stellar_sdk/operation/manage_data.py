@@ -1,15 +1,12 @@
 from typing import Optional, Union
 
 from .. import xdr as stellar_xdr
-from ..exceptions import ValueError
 from ..muxed_account import MuxedAccount
-from ..type_checked import type_checked
 from .operation import Operation
 
 __all__ = ["ManageData"]
 
 
-@type_checked
 class ManageData(Operation):
     """The :class:`ManageData` object, which represents a
     ManageData operation on Stellar's network.
@@ -86,5 +83,5 @@ class ManageData(Operation):
         op = cls(data_name=data_name, data_value=data_value, source=source)
         return op
 
-    def __str__(self):
+    def __repr__(self):
         return f"<ManageData [data_name={self.data_name}, data_value={self.data_value}, source={self.source}]>"

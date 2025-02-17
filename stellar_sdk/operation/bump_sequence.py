@@ -2,13 +2,11 @@ from typing import Optional, Union
 
 from .. import xdr as stellar_xdr
 from ..muxed_account import MuxedAccount
-from ..type_checked import type_checked
 from .operation import Operation
 
 __all__ = ["BumpSequence"]
 
 
-@type_checked
 class BumpSequence(Operation):
     """The :class:`BumpSequence` object, which represents a
     BumpSequence operation on Stellar's network.
@@ -57,5 +55,5 @@ class BumpSequence(Operation):
         op = cls(source=source, bump_to=bump_to)
         return op
 
-    def __str__(self):
+    def __repr__(self):
         return f"<BumpSequence [bump_to={self.bump_to}, source={self.source}]>"

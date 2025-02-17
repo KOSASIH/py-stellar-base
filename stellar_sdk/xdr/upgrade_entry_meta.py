@@ -1,7 +1,10 @@
 # This is an automatically generated file.
 # DO NOT EDIT or your changes may be overwritten
+from __future__ import annotations
+
 import base64
-from xdrlib import Packer, Unpacker
+
+from xdrlib3 import Packer, Unpacker
 
 from .ledger_entry_changes import LedgerEntryChanges
 from .ledger_upgrade import LedgerUpgrade
@@ -33,7 +36,7 @@ class UpgradeEntryMeta:
         self.changes.pack(packer)
 
     @classmethod
-    def unpack(cls, unpacker: Unpacker) -> "UpgradeEntryMeta":
+    def unpack(cls, unpacker: Unpacker) -> UpgradeEntryMeta:
         upgrade = LedgerUpgrade.unpack(unpacker)
         changes = LedgerEntryChanges.unpack(unpacker)
         return cls(
@@ -47,7 +50,7 @@ class UpgradeEntryMeta:
         return packer.get_buffer()
 
     @classmethod
-    def from_xdr_bytes(cls, xdr: bytes) -> "UpgradeEntryMeta":
+    def from_xdr_bytes(cls, xdr: bytes) -> UpgradeEntryMeta:
         unpacker = Unpacker(xdr)
         return cls.unpack(unpacker)
 
@@ -56,16 +59,24 @@ class UpgradeEntryMeta:
         return base64.b64encode(xdr_bytes).decode()
 
     @classmethod
-    def from_xdr(cls, xdr: str) -> "UpgradeEntryMeta":
+    def from_xdr(cls, xdr: str) -> UpgradeEntryMeta:
         xdr_bytes = base64.b64decode(xdr.encode())
         return cls.from_xdr_bytes(xdr_bytes)
+
+    def __hash__(self):
+        return hash(
+            (
+                self.upgrade,
+                self.changes,
+            )
+        )
 
     def __eq__(self, other: object):
         if not isinstance(other, self.__class__):
             return NotImplemented
         return self.upgrade == other.upgrade and self.changes == other.changes
 
-    def __str__(self):
+    def __repr__(self):
         out = [
             f"upgrade={self.upgrade}",
             f"changes={self.changes}",

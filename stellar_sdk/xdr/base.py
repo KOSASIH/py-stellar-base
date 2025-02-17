@@ -1,4 +1,4 @@
-from xdrlib import Packer, Unpacker
+from xdrlib3 import Packer, Unpacker
 
 __all__ = [
     "Integer",
@@ -24,12 +24,15 @@ class Integer:
     def unpack(unpacker: Unpacker) -> int:
         return unpacker.unpack_int()
 
+    def __hash__(self):
+        return hash(self.value)
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
             return NotImplemented
         return self.value == other.value
 
-    def __str__(self):
+    def __repr__(self):
         return f"<Integer [value={self.value}]>"
 
 
@@ -44,12 +47,15 @@ class UnsignedInteger:
     def unpack(unpacker: Unpacker) -> int:
         return unpacker.unpack_uint()
 
+    def __hash__(self):
+        return hash(self.value)
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
             return NotImplemented
         return self.value == other.value
 
-    def __str__(self):
+    def __repr__(self):
         return f"<UnsignedInteger [value={self.value}]>"
 
 
@@ -64,12 +70,15 @@ class Float:
     def unpack(unpacker: Unpacker) -> float:
         return unpacker.unpack_float()
 
+    def __hash__(self):
+        return hash(self.value)
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
             return NotImplemented
         return self.value == other.value
 
-    def __str__(self):
+    def __repr__(self):
         return f"<Float [value={self.value}]>"
 
 
@@ -84,12 +93,15 @@ class Double:
     def unpack(unpacker: Unpacker) -> float:
         return unpacker.unpack_double()
 
+    def __hash__(self):
+        return hash(self.value)
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
             return NotImplemented
         return self.value == other.value
 
-    def __str__(self):
+    def __repr__(self):
         return f"<Double [value={self.value}]>"
 
 
@@ -104,12 +116,15 @@ class Hyper:
     def unpack(unpacker: Unpacker) -> int:
         return unpacker.unpack_hyper()
 
+    def __hash__(self):
+        return hash(self.value)
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
             return NotImplemented
         return self.value == other.value
 
-    def __str__(self):
+    def __repr__(self):
         return f"<Hyper [value={self.value}]>"
 
 
@@ -124,12 +139,15 @@ class UnsignedHyper:
     def unpack(unpacker: Unpacker) -> int:
         return unpacker.unpack_uhyper()
 
+    def __hash__(self):
+        return hash(self.value)
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
             return NotImplemented
         return self.value == other.value
 
-    def __str__(self):
+    def __repr__(self):
         return f"<UnsignedHyper [value={self.value}]>"
 
 
@@ -144,12 +162,15 @@ class Boolean:
     def unpack(unpacker: Unpacker) -> bool:
         return unpacker.unpack_bool()
 
+    def __hash__(self):
+        return hash(self.value)
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
             return NotImplemented
         return self.value == other.value
 
-    def __str__(self):
+    def __repr__(self):
         return f"<Boolean [value={self.value}]>"
 
 
@@ -172,12 +193,15 @@ class String:
         size = unpacker.unpack_uint()
         return unpacker.unpack_fopaque(size)
 
+    def __hash__(self):
+        return hash((self.value, self.size))
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
             return NotImplemented
         return self.value == other.value and self.size == other.size
 
-    def __str__(self):
+    def __repr__(self):
         return f"<String [value={self.value}, size={self.size}]>"
 
 
@@ -212,6 +236,9 @@ class Opaque:
             size = unpacker.unpack_uint()
         return unpacker.unpack_fopaque(size)
 
+    def __hash__(self):
+        return hash((self.value, self.size, self.fixed))
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
             return NotImplemented
@@ -221,5 +248,5 @@ class Opaque:
             and self.size == other.size
         )
 
-    def __str__(self):
+    def __repr__(self):
         return f"<Opaque [value={self.value}, fixed={self.fixed}, size={self.size}]>"

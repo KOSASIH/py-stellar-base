@@ -1,7 +1,10 @@
 # This is an automatically generated file.
 # DO NOT EDIT or your changes may be overwritten
+from __future__ import annotations
+
 import base64
-from xdrlib import Packer, Unpacker
+
+from xdrlib3 import Packer, Unpacker
 
 from .scp_nomination import SCPNomination
 from .scp_statement_confirm import SCPStatementConfirm
@@ -87,7 +90,7 @@ class SCPStatementPledges:
             return
 
     @classmethod
-    def unpack(cls, unpacker: Unpacker) -> "SCPStatementPledges":
+    def unpack(cls, unpacker: Unpacker) -> SCPStatementPledges:
         type = SCPStatementType.unpack(unpacker)
         if type == SCPStatementType.SCP_ST_PREPARE:
             prepare = SCPStatementPrepare.unpack(unpacker)
@@ -109,7 +112,7 @@ class SCPStatementPledges:
         return packer.get_buffer()
 
     @classmethod
-    def from_xdr_bytes(cls, xdr: bytes) -> "SCPStatementPledges":
+    def from_xdr_bytes(cls, xdr: bytes) -> SCPStatementPledges:
         unpacker = Unpacker(xdr)
         return cls.unpack(unpacker)
 
@@ -118,9 +121,20 @@ class SCPStatementPledges:
         return base64.b64encode(xdr_bytes).decode()
 
     @classmethod
-    def from_xdr(cls, xdr: str) -> "SCPStatementPledges":
+    def from_xdr(cls, xdr: str) -> SCPStatementPledges:
         xdr_bytes = base64.b64decode(xdr.encode())
         return cls.from_xdr_bytes(xdr_bytes)
+
+    def __hash__(self):
+        return hash(
+            (
+                self.type,
+                self.prepare,
+                self.confirm,
+                self.externalize,
+                self.nominate,
+            )
+        )
 
     def __eq__(self, other: object):
         if not isinstance(other, self.__class__):
@@ -133,13 +147,15 @@ class SCPStatementPledges:
             and self.nominate == other.nominate
         )
 
-    def __str__(self):
+    def __repr__(self):
         out = []
         out.append(f"type={self.type}")
         out.append(f"prepare={self.prepare}") if self.prepare is not None else None
         out.append(f"confirm={self.confirm}") if self.confirm is not None else None
-        out.append(
-            f"externalize={self.externalize}"
-        ) if self.externalize is not None else None
+        (
+            out.append(f"externalize={self.externalize}")
+            if self.externalize is not None
+            else None
+        )
         out.append(f"nominate={self.nominate}") if self.nominate is not None else None
         return f"<SCPStatementPledges [{', '.join(out)}]>"

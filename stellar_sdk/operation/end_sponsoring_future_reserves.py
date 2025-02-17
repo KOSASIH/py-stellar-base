@@ -2,13 +2,11 @@ from typing import Optional, Union
 
 from .. import xdr as stellar_xdr
 from ..muxed_account import MuxedAccount
-from ..type_checked import type_checked
 from .operation import Operation
 
 __all__ = ["EndSponsoringFutureReserves"]
 
 
-@type_checked
 class EndSponsoringFutureReserves(Operation):
     """The :class:`EndSponsoringFutureReserves` object, which represents a EndSponsoringFutureReserves
     operation on Stellar's network.
@@ -45,5 +43,5 @@ class EndSponsoringFutureReserves(Operation):
         op = cls(source=source)
         return op
 
-    def __str__(self):
+    def __repr__(self):
         return f"<EndSponsoringFutureReserves [source={self.source}]>"

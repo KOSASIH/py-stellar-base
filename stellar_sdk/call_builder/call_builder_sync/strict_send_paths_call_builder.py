@@ -5,12 +5,10 @@ from ...asset import Asset
 from ...call_builder.base import BaseStrictSendPathsCallBuilder
 from ...call_builder.call_builder_sync.base_call_builder import BaseCallBuilder
 from ...client.base_sync_client import BaseSyncClient
-from ...type_checked import type_checked
 
 __all__ = ["StrictSendPathsCallBuilder"]
 
 
-@type_checked
 class StrictSendPathsCallBuilder(BaseCallBuilder, BaseStrictSendPathsCallBuilder):
     """Creates a new :class:`StrictSendPathsCallBuilder` pointed to server defined by horizon_url.
     Do not create this object directly, use :func:`stellar_sdk.Server.strict_send_paths`.
@@ -56,3 +54,9 @@ class StrictSendPathsCallBuilder(BaseCallBuilder, BaseStrictSendPathsCallBuilder
             source_amount=source_amount,
             destination=destination,
         )
+
+    def stream(
+        self,
+    ):
+        """This endpoint does not support streaming."""
+        raise NotImplementedError("Streaming is not supported.")

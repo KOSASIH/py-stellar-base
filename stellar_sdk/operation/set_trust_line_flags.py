@@ -6,7 +6,6 @@ from ..asset import Asset
 from ..keypair import Keypair
 from ..muxed_account import MuxedAccount
 from ..strkey import StrKey
-from ..type_checked import type_checked
 from ..utils import raise_if_not_valid_ed25519_public_key
 from .operation import Operation
 
@@ -29,7 +28,6 @@ class TrustLineFlags(IntFlag):
     TRUSTLINE_CLAWBACK_ENABLED_FLAG = 4
 
 
-@type_checked
 class SetTrustLineFlags(Operation):
     """The :class:`SetTrustLineFlags` object, which represents a SetTrustLineFlags operation on
     Stellar's network.
@@ -114,7 +112,7 @@ class SetTrustLineFlags(Operation):
         )
         return op
 
-    def __str__(self):
+    def __repr__(self):
         return (
             f"<SetTrustLineFlags [trustor={self.trustor}, asset={self.asset}, "
             f"clear_flags={self.clear_flags}, set_flags={self.set_flags}, source={self.source}]>"

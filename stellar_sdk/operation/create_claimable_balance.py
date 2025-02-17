@@ -1,14 +1,12 @@
 from decimal import Decimal
 from enum import IntEnum
-from typing import List, Optional, Union
+from typing import Optional, Sequence, Union
 
 from .. import xdr as stellar_xdr
 from ..asset import Asset
-from ..exceptions import ValueError
 from ..keypair import Keypair
 from ..muxed_account import MuxedAccount
 from ..strkey import StrKey
-from ..type_checked import type_checked
 from ..utils import raise_if_not_valid_amount, raise_if_not_valid_ed25519_public_key
 from .operation import Operation
 
@@ -26,7 +24,6 @@ class ClaimPredicateType(IntEnum):
     CLAIM_PREDICATE_BEFORE_RELATIVE_TIME = 5
 
 
-@type_checked
 class ClaimPredicateGroup:
     """Used to assemble the left and right values for and_predicates and or_predicates.
 
@@ -38,16 +35,18 @@ class ClaimPredicateGroup:
         self.left = left
         self.right = right
 
+    def __hash__(self):
+        return hash((self.left, self.right))
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
             return NotImplemented
         return self.left == other.left and self.right == other.right
 
-    def __str__(self):
+    def __repr__(self):
         return f"<ClaimPredicateGroup [left={self.left}, right={self.right}]>"
 
 
-@type_checked
 class ClaimPredicate:
     """The :class:`ClaimPredicate` object, which represents a ClaimPredicate on Stellar's network.
 
@@ -288,6 +287,18 @@ class ClaimPredicate:
                 f"{claim_predicate_type} is an unsupported ClaimPredicateType."
             )
 
+    def __hash__(self):
+        return hash(
+            (
+                self.claim_predicate_type,
+                self.and_predicates,
+                self.or_predicates,
+                self.not_predicate,
+                self.abs_before,
+                self.rel_before,
+            )
+        )
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
             return NotImplemented
@@ -300,7 +311,7 @@ class ClaimPredicate:
             and self.rel_before == other.rel_before
         )
 
-    def __str__(self):
+    def __repr__(self):
         return (
             f"<ClaimPredicate [claim_predicate_type={self.claim_predicate_type}, "
             f"and_predicates={self.and_predicates}, "
@@ -311,7 +322,6 @@ class ClaimPredicate:
         )
 
 
-@type_checked
 class Claimant:
     """The :class:`Claimant` object represents a claimable balance claimant.
 
@@ -347,6 +357,9 @@ class Claimant:
         predicate = ClaimPredicate.from_xdr_object(xdr_object.v0.predicate)
         return cls(destination=destination, predicate=predicate)
 
+    def __hash__(self):
+        return hash((self.destination, self.predicate))
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
             return NotImplemented
@@ -354,13 +367,12 @@ class Claimant:
             self.destination == other.destination and self.predicate == other.predicate
         )
 
-    def __str__(self):
+    def __repr__(self):
         return (
             f"<Claimant [destination={self.destination}, predicate={self.predicate}]>"
         )
 
 
-@type_checked
 class CreateClaimableBalance(Operation):
     """The :class:`CreateClaimableBalance` object, which represents a CreateClaimableBalance
     operation on Stellar's network.
@@ -387,13 +399,13 @@ class CreateClaimableBalance(Operation):
         self,
         asset: Asset,
         amount: Union[str, Decimal],
-        claimants: List[Claimant],
+        claimants: Sequence[Claimant],
         source: Optional[Union[MuxedAccount, str]] = None,
     ) -> None:
         super().__init__(source)
         self.asset: Asset = asset
         self.amount: str = str(amount)
-        self.claimants: List[Claimant] = claimants
+        self.claimants: Sequence[Claimant] = claimants
         raise_if_not_valid_amount(self.amount, "amount")
 
     def _to_operation_body(self) -> stellar_xdr.OperationBody:
@@ -428,7 +440,7 @@ class CreateClaimableBalance(Operation):
         op = cls(asset=asset, amount=amount, claimants=claimants, source=source)
         return op
 
-    def __str__(self):
+    def __repr__(self):
         return (
             f"<CreateClaimableBalance [asset={self.asset}, amount={self.amount}, "
             f"claimants={self.claimants}, source={self.source}]>"

@@ -1,7 +1,10 @@
 # This is an automatically generated file.
 # DO NOT EDIT or your changes may be overwritten
+from __future__ import annotations
+
 import base64
-from xdrlib import Packer, Unpacker
+
+from xdrlib3 import Packer, Unpacker
 
 from .crypto_key_type import CryptoKeyType
 from .muxed_account_med25519 import MuxedAccountMed25519
@@ -51,7 +54,7 @@ class MuxedAccount:
             return
 
     @classmethod
-    def unpack(cls, unpacker: Unpacker) -> "MuxedAccount":
+    def unpack(cls, unpacker: Unpacker) -> MuxedAccount:
         type = CryptoKeyType.unpack(unpacker)
         if type == CryptoKeyType.KEY_TYPE_ED25519:
             ed25519 = Uint256.unpack(unpacker)
@@ -67,7 +70,7 @@ class MuxedAccount:
         return packer.get_buffer()
 
     @classmethod
-    def from_xdr_bytes(cls, xdr: bytes) -> "MuxedAccount":
+    def from_xdr_bytes(cls, xdr: bytes) -> MuxedAccount:
         unpacker = Unpacker(xdr)
         return cls.unpack(unpacker)
 
@@ -76,9 +79,18 @@ class MuxedAccount:
         return base64.b64encode(xdr_bytes).decode()
 
     @classmethod
-    def from_xdr(cls, xdr: str) -> "MuxedAccount":
+    def from_xdr(cls, xdr: str) -> MuxedAccount:
         xdr_bytes = base64.b64decode(xdr.encode())
         return cls.from_xdr_bytes(xdr_bytes)
+
+    def __hash__(self):
+        return hash(
+            (
+                self.type,
+                self.ed25519,
+                self.med25519,
+            )
+        )
 
     def __eq__(self, other: object):
         if not isinstance(other, self.__class__):
@@ -89,7 +101,7 @@ class MuxedAccount:
             and self.med25519 == other.med25519
         )
 
-    def __str__(self):
+    def __repr__(self):
         out = []
         out.append(f"type={self.type}")
         out.append(f"ed25519={self.ed25519}") if self.ed25519 is not None else None

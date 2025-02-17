@@ -1,8 +1,11 @@
 # This is an automatically generated file.
 # DO NOT EDIT or your changes may be overwritten
+from __future__ import annotations
+
 import base64
 from enum import IntEnum
-from xdrlib import Packer, Unpacker
+
+from xdrlib3 import Packer, Unpacker
 
 __all__ = ["MessageType"]
 
@@ -22,6 +25,7 @@ class MessageType(IntEnum):
 
             GET_TX_SET = 6, // gets a particular txset by hash
             TX_SET = 7,
+            GENERALIZED_TX_SET = 17,
 
             TRANSACTION = 8, // pass on a tx you have heard about
 
@@ -37,7 +41,16 @@ class MessageType(IntEnum):
             SURVEY_REQUEST = 14,
             SURVEY_RESPONSE = 15,
 
-            SEND_MORE = 16
+            SEND_MORE = 16,
+            SEND_MORE_EXTENDED = 20,
+
+            FLOOD_ADVERT = 18,
+            FLOOD_DEMAND = 19,
+
+            TIME_SLICED_SURVEY_REQUEST = 21,
+            TIME_SLICED_SURVEY_RESPONSE = 22,
+            TIME_SLICED_SURVEY_START_COLLECTING = 23,
+            TIME_SLICED_SURVEY_STOP_COLLECTING = 24
         };
     """
 
@@ -48,6 +61,7 @@ class MessageType(IntEnum):
     PEERS = 5
     GET_TX_SET = 6
     TX_SET = 7
+    GENERALIZED_TX_SET = 17
     TRANSACTION = 8
     GET_SCP_QUORUMSET = 9
     SCP_QUORUMSET = 10
@@ -57,12 +71,19 @@ class MessageType(IntEnum):
     SURVEY_REQUEST = 14
     SURVEY_RESPONSE = 15
     SEND_MORE = 16
+    SEND_MORE_EXTENDED = 20
+    FLOOD_ADVERT = 18
+    FLOOD_DEMAND = 19
+    TIME_SLICED_SURVEY_REQUEST = 21
+    TIME_SLICED_SURVEY_RESPONSE = 22
+    TIME_SLICED_SURVEY_START_COLLECTING = 23
+    TIME_SLICED_SURVEY_STOP_COLLECTING = 24
 
     def pack(self, packer: Packer) -> None:
         packer.pack_int(self.value)
 
     @classmethod
-    def unpack(cls, unpacker: Unpacker) -> "MessageType":
+    def unpack(cls, unpacker: Unpacker) -> MessageType:
         value = unpacker.unpack_int()
         return cls(value)
 
@@ -72,7 +93,7 @@ class MessageType(IntEnum):
         return packer.get_buffer()
 
     @classmethod
-    def from_xdr_bytes(cls, xdr: bytes) -> "MessageType":
+    def from_xdr_bytes(cls, xdr: bytes) -> MessageType:
         unpacker = Unpacker(xdr)
         return cls.unpack(unpacker)
 
@@ -81,6 +102,6 @@ class MessageType(IntEnum):
         return base64.b64encode(xdr_bytes).decode()
 
     @classmethod
-    def from_xdr(cls, xdr: str) -> "MessageType":
+    def from_xdr(cls, xdr: str) -> MessageType:
         xdr_bytes = base64.b64decode(xdr.encode())
         return cls.from_xdr_bytes(xdr_bytes)

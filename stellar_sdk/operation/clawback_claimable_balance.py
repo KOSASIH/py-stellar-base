@@ -4,14 +4,12 @@ from typing import Optional, Union
 
 from .. import xdr as stellar_xdr
 from ..muxed_account import MuxedAccount
-from ..type_checked import type_checked
 from ..utils import raise_if_not_valid_balance_id
 from .operation import Operation
 
 __all__ = ["ClawbackClaimableBalance"]
 
 
-@type_checked
 class ClawbackClaimableBalance(Operation):
     """The :class:`ClawbackClaimableBalance` object, which represents a ClawbackClaimableBalance operation on
     Stellar's network.
@@ -66,5 +64,5 @@ class ClawbackClaimableBalance(Operation):
         op = cls(balance_id=balance_id, source=source)
         return op
 
-    def __str__(self):
+    def __repr__(self):
         return f"<ClawbackClaimableBalance [balance_id={self.balance_id}, source={self.source}]>"

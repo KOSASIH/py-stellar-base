@@ -1,6 +1,270 @@
 Release History
 ==============
 
+### Pending
+
+### Version 12.1.0
+
+Released on December 27, 2024
+
+#### Update
+- feat: Add optional support for Shamir Secret Sharing with `Keypair.from_shamir_mnemonic_phrases` and `Keypair.generate_shamir_mnemonic_phrases`. ([#1010](https://github.com/StellarCN/py-stellar-base/pull/1010))
+
+### Version 12.0.0
+
+Released on November 28, 2024
+
+This is the first stable release that supports Protocol 22. While the network has not upgraded yet, 
+you can start integrating the new features into your codebase if you want a head start.
+
+If you are using this SDK to call Soroban contracts, please check [stellar-contract-bindings](https://github.com/lightsail-network/stellar-contract-bindings), 
+which can automatically generate contract binding code for you, making it incredibly easy to call contracts.
+
+The following log is the changes since 11.1.0:
+
+#### Update
+- feat: add support for Soroban PRC's `getVersionInfo` API interfaces. ([#984](https://github.com/StellarCN/py-stellar-base/pull/984))
+- feat: Add `transaction_hash` to `GetTransactionResponse` and `GetTransactionsResponse`. ([#984](https://github.com/StellarCN/py-stellar-base/pull/984))
+- feat: `scval.from_enum` and `scval.to_enum` now support multiple values. ([#1004](https://github.com/StellarCN/py-stellar-base/pull/1004))
+- feat: add support for Soroban PRC's `getLedgers` API interfaces. ([#992](https://github.com/StellarCN/py-stellar-base/pull/992))
+- feat: add `stellar_sdk.contract.ContractClient` and `stellar_sdk.contract.ContractClientAsync`, this greatly reduces the difficulty of calling contracts, and you can learn more through the documentation and [examples](https://github.com/StellarCN/py-stellar-base/blob/main/examples/soroban_invoke_contract_function.py). ([#998](https://github.com/StellarCN/py-stellar-base/pull/998))
+
+#### Breaking changes
+- refactor!: The `EventInfo.paging_token` field has been marked as deprecated, use the `cursor` in `GetEventsResponse` instead. ([#984](https://github.com/StellarCN/py-stellar-base/pull/984))
+- refactor!: The legacy `cost` field has been removed from `SimulateTransactionResponse`, parse it from `transaction_data` instead. ([#984](https://github.com/StellarCN/py-stellar-base/pull/984))
+- feat!: support constructors in contract creation via `TransactionBuilder.append_create_contract_op`, the signature of the function has been changed. ([#979](https://github.com/StellarCN/py-stellar-base/pull/979))
+- refactor!: Updated `signer` parameter in auth to accept a callable returning (public_key, signatures) instead of just public_key. ([#982](https://github.com/StellarCN/py-stellar-base/pull/982))
+
+### Version 12.0.0-beta6
+
+Released on November 26, 2024
+
+#### Update
+- feat: `scval.from_enum` and `scval.to_enum` now support multiple values. ([#1004](https://github.com/StellarCN/py-stellar-base/pull/1004))
+
+### Version 12.0.0-beta5
+
+Released on November 23, 2024
+
+#### Update
+- fix: fix a bug in `AssembledTransaction.simulate`. ([#1000](https://github.com/StellarCN/py-stellar-base/pull/1000))
+
+### Version 12.0.0-beta4
+
+Released on November 22, 2024
+
+#### Update
+- feat: add `stellar_sdk.contract.ContractClient` and `stellar_sdk.contract.ContractClientAsync`, this greatly reduces the difficulty of calling contracts, and you can learn more through the documentation and [examples](https://github.com/StellarCN/py-stellar-base/blob/main/examples/soroban_invoke_contract_function.py). ([#998](https://github.com/StellarCN/py-stellar-base/pull/998))
+
+### Version 12.0.0-beta3
+
+Released on November 14, 2024
+
+Several hours ago, I released version 12.0.0-beta2, which added support for the Soroban RPC's getLedgers API interface. 
+However, some field names in the implementation need to be renamed.
+
+#### Update
+- refactor: rename `LedgerInfo.ledger_header` to `LedgerInfo.header_xdr`, `LedgerInfo.ledger_metadata` to `LedgerInfo.metadata_xdr`. ([#994](https://github.com/StellarCN/py-stellar-base/pull/992))
+
+### Version 12.0.0-beta2
+
+Released on November 14, 2024
+
+#### Update
+- feat: add support for Soroban PRC's `getLedgers` API interfaces. ([#992](https://github.com/StellarCN/py-stellar-base/pull/992))
+
+### Version 12.0.0-beta1
+
+Released on November 01, 2024
+
+#### Update
+- refactor: add `paging_token` back to `EventInfo`. This is to ensure compatibility with older versions of Soroban-RPC. We still recommend using the `GetEventsResponse.cursor` field after upgrading Soroban-RPC. ([#990](https://github.com/StellarCN/py-stellar-base/pull/990))
+
+### Version 12.0.0-beta0
+
+Released on October 14, 2024
+
+This is the first release that supports Protocol 22. While the network has not upgraded yet, 
+you can start integrating the new features into your codebase if you want a head start.
+
+#### Update
+- feat: add support for Soroban PRC's `getVersionInfo` API interfaces. ([#984](https://github.com/StellarCN/py-stellar-base/pull/984))
+- feat: Add `transaction_hash` to `GetTransactionResponse` and `GetTransactionsResponse`. ([#984](https://github.com/StellarCN/py-stellar-base/pull/984))
+
+#### Breaking changes
+- refactor!: The `paging_token` field has been removed from `EventInfo`, use the `cursor` in `GetEventsResponse` instead. (Reverted in 12.0.0-beta1) ([#984](https://github.com/StellarCN/py-stellar-base/pull/984))
+- refactor!: The legacy `cost` field has been removed from `SimulateTransactionResponse`, parse it from `transaction_data` instead. ([#984](https://github.com/StellarCN/py-stellar-base/pull/984))
+- feat!: support constructors in contract creation via `TransactionBuilder.append_create_contract_op`, the signature of the function has been changed. ([#979](https://github.com/StellarCN/py-stellar-base/pull/979))
+- refactor!: Updated `signer` parameter in auth to accept a callable returning (public_key, signatures) instead of just public_key. ([#982](https://github.com/StellarCN/py-stellar-base/pull/982))
+
+### Version 11.1.0
+
+Released on September 18, 2024
+
+#### Update
+- feat: add support for Soroban PRC's `getTransactions` and `getFeeStats` API interfaces. ([#960](https://github.com/StellarCN/py-stellar-base/pull/960))
+- feat: add support for Horizon's `transactions_async` API interfaces. ([#961](https://github.com/StellarCN/py-stellar-base/pull/961))
+- fix: fix `authorize_entry` to use the correct public key when passing `Keypair` as signer. ([#971](https://github.com/StellarCN/py-stellar-base/pull/971))
+- feat: Expose `stellar_sdk.address.AddressType` for easy importing. ([#973](https://github.com/StellarCN/py-stellar-base/pull/973))
+- chore: bump dependencies.
+
+### Version 11.0.0
+
+Released on July 16, 2024
+
+#### Update
+- feat: `SorobanServer.send_transaction` supports sending FeeBumpTransactionEnvelope. ([#956](https://github.com/StellarCN/py-stellar-base/pull/956))
+- fix: Corrected the issue where `TransactionBuilder.from_xdr` could not properly parse transactions containing Soroban operations. ([#957](https://github.com/StellarCN/py-stellar-base/pull/957))
+- fix: Corrected the issue where `FeeBumpTransactionEnvelope.from_xdr` could not properly parse transactions containing Soroban operations. ([#957](https://github.com/StellarCN/py-stellar-base/pull/957))
+- refactor: `TransactionBuilder.from_xdr` previously could return `TransactionBuilder` or `FeeBumpTransactionEnvelope`. Now it will no longer return `TransactionBuilder`, but will return `TransactionEnvelope` or `FeeBumpTransactionEnvelope`. ([#957](https://github.com/StellarCN/py-stellar-base/pull/957))
+- feat: `TransactionBuilder.build_fee_bump_transaction` now supports transactions containing Soroban operations. ([#957](https://github.com/StellarCN/py-stellar-base/pull/957))
+- fix: fix the issue where invoking `SorobanServer.prepare_transaction` for transactions that have already set `SorobanData` could result in unexpected high fees. ([#957](https://github.com/StellarCN/py-stellar-base/pull/957))
+- chore: bump dependencies.
+
+#### Breaking changes
+- refactor: `FeeBumpTransactionEnvelope.base_fee` has been removed. Please use `FeeBumpTransactionEnvelope.fee instead`. Note that their meanings are different: ([#957](https://github.com/StellarCN/py-stellar-base/pull/957))
+  - `FeeBumpTransactionEnvelope.base_fee` represented the maximum fee you were willing to pay per operation for this transaction.
+  - `FeeBumpTransactionEnvelope.fee` represents the maximum fee you are willing to pay for this transaction.
+- refactor: `TransactionBuilder.from_xdr` previously could return `TransactionBuilder` or `FeeBumpTransactionEnvelope`. Now it will no longer return `TransactionBuilder`, but will return `TransactionEnvelope` or `FeeBumpTransactionEnvelope`. ([#957](https://github.com/StellarCN/py-stellar-base/pull/957))
+- refactor: `helpers.parse_transaction_envelope_from_xdr` has been marked as deprecated. Please use the refactored `TransactionEnvelope.from_xdr` instead. ([#957](https://github.com/StellarCN/py-stellar-base/pull/957))
+
+### Version 10.0.0
+
+Released on May 15, 2024
+
+#### Update
+- improve: The function in `stellar_xdr.scval` can accept `sc_val` of `base64` and `bytes` types. ([#932](https://github.com/StellarCN/py-stellar-base/pull/932))
+- feat: add support for Soroban-RPC 21. ([#933](https://github.com/StellarCN/py-stellar-base/pull/933))
+- refactor: use `__repr__` instead of `__str__` in classes. ([#936](https://github.com/StellarCN/py-stellar-base/pull/936))
+- feat: add a helper function to convert SCVal to native types. ([#937](https://github.com/StellarCN/py-stellar-base/pull/937))
+- chore: updated various dependencies.
+
+#### Breaking changes
+- feat: add support for Soroban-RPC 21, you need to upgrade Soroban PRC to version v21 or above. ([#933](https://github.com/StellarCN/py-stellar-base/pull/933))
+
+### Version 9.4.0
+
+Released on May 01, 2024
+
+#### Update
+- chore: The generated XDR has been upgraded to match the upcoming Protocol 21, namely [stellar/stellar-xdr@v21.1](https://github.com/stellar/stellar-xdr/tree/v21.1). ([#927](https://github.com/StellarCN/py-stellar-base/pull/927))
+- chore: updated various dependencies.
+
+### Version 9.3.0
+
+Released on March 13, 2024
+
+#### Update
+- feat: Add `Asset.contract_id()` for calculating the id of the asset contract. ([#901](https://github.com/StellarCN/py-stellar-base/pull/901))
+- chore: throw an exception when the API does not provide streaming support. ([#878](https://github.com/StellarCN/py-stellar-base/pull/878))
+
+### Version 9.2.0
+
+Released on Jan 14, 2024
+
+#### Update
+- feat: add `scv.to_void` and `scv.from_void`. ([#863](https://github.com/StellarCN/py-stellar-base/pull/863))
+- feat: Support for the new, optional `diagnostic_events_xdr` field on the `SorobanServer.send_transaction` method. ([#866](https://github.com/stellar/java-stellar-sdk/pull/866))
+- chore: update dependencies.
+
+### Version 9.1.3
+
+Released on Jan 3, 2024
+
+#### Update
+- fix: fix the way of exporting modules to resolve pyright warnings. ([#858](https://github.com/StellarCN/py-stellar-base/pull/858))
+
+### Version 9.1.2
+
+Released on Dec 26, 2023
+
+#### Update
+- fix: mark GetTransactionResponse.create_at as Optional. ([#854](https://github.com/StellarCN/py-stellar-base/pull/854))
+
+### Version 9.1.1
+
+Released on Dec 16, 2023
+
+#### Update
+- improve: add the missing `create_at` field to `GetTransactionResponse`. ([#849](https://github.com/StellarCN/py-stellar-base/pull/849))
+
+### Version 9.1.0
+
+Released on Dec 16, 2023
+
+#### Update
+- feat: support resource leeway parameter when simulating Soroban transactions. ([#846](https://github.com/StellarCN/py-stellar-base/pull/846))
+- refactor: the type of `GetEventsRequest.start_ledger` has changed from `str` to `int`. ([#847](https://github.com/StellarCN/py-stellar-base/pull/847))
+
+### Version 9.0.0
+
+Released on Dec 9, 2023
+
+#### Update
+- fix: fix the issue of incorrect handling of special horizon links on the Windows platform. ([#825](https://github.com/StellarCN/py-stellar-base/pull/825))
+- chore: add support for Python 3.12. ([#799](https://github.com/StellarCN/py-stellar-base/pull/799))
+- chore: `SorobanServer` uses testnet instead of futurenet by default ([#831](https://github.com/StellarCN/py-stellar-base/pull/831))
+
+### Version 9.0.0-beta1
+
+Released on Nov 15, 2023
+
+#### Update
+- refactor: make the `parameters` parameter in `TransactionBuilder.append_invoke_contract_function_op` optional. ([#789](https://github.com/StellarCN/py-stellar-base/pull/789))
+- improve: sort the dictionary based on the key when calling `scval.to_struct`.  ([#817](https://github.com/StellarCN/py-stellar-base/pull/817))
+
+#### Breaking changes
+- chore: drop support for Python 3.7. ([#813](https://github.com/StellarCN/py-stellar-base/pull/813))
+- refactor: replace `stellar-base-sseclient` with `requests-sse` to improve the stability of the stream. Previously, when encountering an error, it would throw a `ConnectionError`, but now it will throw a `StreamClientError`. ([#814](https://github.com/StellarCN/py-stellar-base/pull/814))
+- feat: update the SDK to the stable Protocol 20 release, this contains some breaking updates, please check [#808](https://github.com/StellarCN/py-stellar-base/issues/808) for more information. ([#809](https://github.com/StellarCN/py-stellar-base/pull/809))
+
+### Version 9.0.0-beta0
+
+Released on September 20, 2023
+
+#### Update
+- feat: add helper functions to sign authorization entries. ([#776](https://github.com/StellarCN/py-stellar-base/pull/776))
+- feat: add `SorobanServerAsync` to support asynchronous requests. ([#782](https://github.com/StellarCN/py-stellar-base/pull/782))
+
+### Version 9.0.0-alpha2
+
+Released on September 16, 2023
+
+#### Update
+- feat: add support for Soroban Preview 11 ([#777](https://github.com/StellarCN/py-stellar-base/pull/777))
+
+### Version 9.0.0-alpha1
+
+Released on Aug 28, 2023
+
+#### Update
+- fix: fix the issue where soroban data is not correctly set when building a transaction through TransactionBuilder. ([#770](https://github.com/StellarCN/py-stellar-base/pull/770))
+
+### Version 9.0.0-alpha0
+
+Released on Aug 27, 2023
+
+#### Add
+- feat: add support for Soroban Preview 10. Please check the examples in the `examples` folder to learn how to use it.
+
+#### Update
+- Runtime type checking has now been removed. Please use tools like mypy for type checking. ([#706](https://github.com/StellarCN/py-stellar-base/pull/706))
+- Add `__hash__` to the xdr classes. ([#757](https://github.com/StellarCN/py-stellar-base/pull/757))
+- Make `aiohttp` and `aiohttp-sse-client` as optional dependencies. ([#765](https://github.com/StellarCN/py-stellar-base/pull/765))
+- Publishing to PyPI with a Trusted Publisher. ([#767](https://github.com/StellarCN/py-stellar-base/pull/767))
+- Update dependencies.
+
+#### Breaking changes
+- Remove `ValueError`, `TypeError` and `AttributeError` from `stellar_sdk.exceptions`. ([#763](https://github.com/StellarCN/py-stellar-base/pull/763))
+
+
+### Version 8.2.1
+
+Released on June 22, 2023
+
+#### Add
+- feat: add comparison operators to Price class. ([#741](https://github.com/StellarCN/py-stellar-base/pull/741))
+
 ### Version 8.2.0
 
 Released on March 15, 2023

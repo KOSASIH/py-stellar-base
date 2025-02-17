@@ -2,13 +2,11 @@ from decimal import Decimal
 from typing import Union
 
 from . import xdr as stellar_xdr
-from .type_checked import type_checked
 from .utils import best_rational_approximation
 
 __all__ = ["Price"]
 
 
-@type_checked
 class Price:
     """Create a new price. Price in Stellar is represented as a fraction.
 
@@ -61,10 +59,38 @@ class Price:
         d = xdr_object.d.int32
         return cls(n, d)
 
-    def __eq__(self, other: object) -> bool:
+    def __lt__(self, other):
         if not isinstance(other, self.__class__):
             return NotImplemented
-        return self.n == other.n and self.d == other.d
+        return (self.n * other.d) < (other.n * self.d)
 
-    def __str__(self):
+    def __le__(self, other):
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+        return (self.n * other.d) <= (other.n * self.d)
+
+    def __hash__(self):
+        return hash((self.n, self.d))
+
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+        return (self.n * other.d) == (other.n * self.d)
+
+    def __ne__(self, other):
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+        return (self.n * other.d) != (other.n * self.d)
+
+    def __gt__(self, other):
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+        return (self.n * other.d) > (other.n * self.d)
+
+    def __ge__(self, other):
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+        return (self.n * other.d) >= (other.n * self.d)
+
+    def __repr__(self):
         return f"<Price [n={self.n}, d={self.d}]>"

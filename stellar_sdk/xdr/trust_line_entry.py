@@ -1,7 +1,10 @@
 # This is an automatically generated file.
 # DO NOT EDIT or your changes may be overwritten
+from __future__ import annotations
+
 import base64
-from xdrlib import Packer, Unpacker
+
+from xdrlib3 import Packer, Unpacker
 
 from .account_id import AccountID
 from .int64 import Int64
@@ -75,7 +78,7 @@ class TrustLineEntry:
         self.ext.pack(packer)
 
     @classmethod
-    def unpack(cls, unpacker: Unpacker) -> "TrustLineEntry":
+    def unpack(cls, unpacker: Unpacker) -> TrustLineEntry:
         account_id = AccountID.unpack(unpacker)
         asset = TrustLineAsset.unpack(unpacker)
         balance = Int64.unpack(unpacker)
@@ -97,7 +100,7 @@ class TrustLineEntry:
         return packer.get_buffer()
 
     @classmethod
-    def from_xdr_bytes(cls, xdr: bytes) -> "TrustLineEntry":
+    def from_xdr_bytes(cls, xdr: bytes) -> TrustLineEntry:
         unpacker = Unpacker(xdr)
         return cls.unpack(unpacker)
 
@@ -106,9 +109,21 @@ class TrustLineEntry:
         return base64.b64encode(xdr_bytes).decode()
 
     @classmethod
-    def from_xdr(cls, xdr: str) -> "TrustLineEntry":
+    def from_xdr(cls, xdr: str) -> TrustLineEntry:
         xdr_bytes = base64.b64decode(xdr.encode())
         return cls.from_xdr_bytes(xdr_bytes)
+
+    def __hash__(self):
+        return hash(
+            (
+                self.account_id,
+                self.asset,
+                self.balance,
+                self.limit,
+                self.flags,
+                self.ext,
+            )
+        )
 
     def __eq__(self, other: object):
         if not isinstance(other, self.__class__):
@@ -122,7 +137,7 @@ class TrustLineEntry:
             and self.ext == other.ext
         )
 
-    def __str__(self):
+    def __repr__(self):
         out = [
             f"account_id={self.account_id}",
             f"asset={self.asset}",

@@ -2,12 +2,10 @@ from typing import Union
 
 from . import xdr as stellar_xdr
 from .signer_key import SignerKey
-from .type_checked import type_checked
 
 __all__ = ["Signer"]
 
 
-@type_checked
 class Signer:
     """The :class:`Signer` object, which represents an account signer on Stellar's network.
 
@@ -89,10 +87,13 @@ class Signer:
         signer_key = SignerKey.from_xdr_object(xdr_object.key)
         return cls(signer_key, weight)
 
+    def __hash__(self):
+        return hash((self.signer_key, self.weight))
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
             return NotImplemented
         return self.signer_key == other.signer_key and self.weight == other.weight
 
-    def __str__(self):
+    def __repr__(self):
         return f"<Signer [signer_key={self.signer_key}, weight={self.weight}]>"

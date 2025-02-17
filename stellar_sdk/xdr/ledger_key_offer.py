@@ -1,7 +1,10 @@
 # This is an automatically generated file.
 # DO NOT EDIT or your changes may be overwritten
+from __future__ import annotations
+
 import base64
-from xdrlib import Packer, Unpacker
+
+from xdrlib3 import Packer, Unpacker
 
 from .account_id import AccountID
 from .int64 import Int64
@@ -33,7 +36,7 @@ class LedgerKeyOffer:
         self.offer_id.pack(packer)
 
     @classmethod
-    def unpack(cls, unpacker: Unpacker) -> "LedgerKeyOffer":
+    def unpack(cls, unpacker: Unpacker) -> LedgerKeyOffer:
         seller_id = AccountID.unpack(unpacker)
         offer_id = Int64.unpack(unpacker)
         return cls(
@@ -47,7 +50,7 @@ class LedgerKeyOffer:
         return packer.get_buffer()
 
     @classmethod
-    def from_xdr_bytes(cls, xdr: bytes) -> "LedgerKeyOffer":
+    def from_xdr_bytes(cls, xdr: bytes) -> LedgerKeyOffer:
         unpacker = Unpacker(xdr)
         return cls.unpack(unpacker)
 
@@ -56,16 +59,24 @@ class LedgerKeyOffer:
         return base64.b64encode(xdr_bytes).decode()
 
     @classmethod
-    def from_xdr(cls, xdr: str) -> "LedgerKeyOffer":
+    def from_xdr(cls, xdr: str) -> LedgerKeyOffer:
         xdr_bytes = base64.b64decode(xdr.encode())
         return cls.from_xdr_bytes(xdr_bytes)
+
+    def __hash__(self):
+        return hash(
+            (
+                self.seller_id,
+                self.offer_id,
+            )
+        )
 
     def __eq__(self, other: object):
         if not isinstance(other, self.__class__):
             return NotImplemented
         return self.seller_id == other.seller_id and self.offer_id == other.offer_id
 
-    def __str__(self):
+    def __repr__(self):
         out = [
             f"seller_id={self.seller_id}",
             f"offer_id={self.offer_id}",

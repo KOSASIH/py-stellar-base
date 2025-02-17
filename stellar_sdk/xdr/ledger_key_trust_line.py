@@ -1,7 +1,10 @@
 # This is an automatically generated file.
 # DO NOT EDIT or your changes may be overwritten
+from __future__ import annotations
+
 import base64
-from xdrlib import Packer, Unpacker
+
+from xdrlib3 import Packer, Unpacker
 
 from .account_id import AccountID
 from .trust_line_asset import TrustLineAsset
@@ -33,7 +36,7 @@ class LedgerKeyTrustLine:
         self.asset.pack(packer)
 
     @classmethod
-    def unpack(cls, unpacker: Unpacker) -> "LedgerKeyTrustLine":
+    def unpack(cls, unpacker: Unpacker) -> LedgerKeyTrustLine:
         account_id = AccountID.unpack(unpacker)
         asset = TrustLineAsset.unpack(unpacker)
         return cls(
@@ -47,7 +50,7 @@ class LedgerKeyTrustLine:
         return packer.get_buffer()
 
     @classmethod
-    def from_xdr_bytes(cls, xdr: bytes) -> "LedgerKeyTrustLine":
+    def from_xdr_bytes(cls, xdr: bytes) -> LedgerKeyTrustLine:
         unpacker = Unpacker(xdr)
         return cls.unpack(unpacker)
 
@@ -56,16 +59,24 @@ class LedgerKeyTrustLine:
         return base64.b64encode(xdr_bytes).decode()
 
     @classmethod
-    def from_xdr(cls, xdr: str) -> "LedgerKeyTrustLine":
+    def from_xdr(cls, xdr: str) -> LedgerKeyTrustLine:
         xdr_bytes = base64.b64decode(xdr.encode())
         return cls.from_xdr_bytes(xdr_bytes)
+
+    def __hash__(self):
+        return hash(
+            (
+                self.account_id,
+                self.asset,
+            )
+        )
 
     def __eq__(self, other: object):
         if not isinstance(other, self.__class__):
             return NotImplemented
         return self.account_id == other.account_id and self.asset == other.asset
 
-    def __str__(self):
+    def __repr__(self):
         out = [
             f"account_id={self.account_id}",
             f"asset={self.asset}",

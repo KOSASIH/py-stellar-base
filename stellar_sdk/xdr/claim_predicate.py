@@ -1,8 +1,11 @@
 # This is an automatically generated file.
 # DO NOT EDIT or your changes may be overwritten
+from __future__ import annotations
+
 import base64
 from typing import List, Optional
-from xdrlib import Packer, Unpacker
+
+from xdrlib3 import Packer, Unpacker
 
 from .claim_predicate_type import ClaimPredicateType
 from .int64 import Int64
@@ -28,7 +31,7 @@ class ClaimPredicate:
             int64 absBefore; // Predicate will be true if closeTime < absBefore
         case CLAIM_PREDICATE_BEFORE_RELATIVE_TIME:
             int64 relBefore; // Seconds since closeTime of the ledger in which the
-                                // ClaimableBalanceEntry was created
+                             // ClaimableBalanceEntry was created
         };
     """
 
@@ -97,7 +100,7 @@ class ClaimPredicate:
             return
 
     @classmethod
-    def unpack(cls, unpacker: Unpacker) -> "ClaimPredicate":
+    def unpack(cls, unpacker: Unpacker) -> ClaimPredicate:
         type = ClaimPredicateType.unpack(unpacker)
         if type == ClaimPredicateType.CLAIM_PREDICATE_UNCONDITIONAL:
             return cls(type=type)
@@ -132,7 +135,7 @@ class ClaimPredicate:
         return packer.get_buffer()
 
     @classmethod
-    def from_xdr_bytes(cls, xdr: bytes) -> "ClaimPredicate":
+    def from_xdr_bytes(cls, xdr: bytes) -> ClaimPredicate:
         unpacker = Unpacker(xdr)
         return cls.unpack(unpacker)
 
@@ -141,9 +144,21 @@ class ClaimPredicate:
         return base64.b64encode(xdr_bytes).decode()
 
     @classmethod
-    def from_xdr(cls, xdr: str) -> "ClaimPredicate":
+    def from_xdr(cls, xdr: str) -> ClaimPredicate:
         xdr_bytes = base64.b64decode(xdr.encode())
         return cls.from_xdr_bytes(xdr_bytes)
+
+    def __hash__(self):
+        return hash(
+            (
+                self.type,
+                self.and_predicates,
+                self.or_predicates,
+                self.not_predicate,
+                self.abs_before,
+                self.rel_before,
+            )
+        )
 
     def __eq__(self, other: object):
         if not isinstance(other, self.__class__):
@@ -157,22 +172,32 @@ class ClaimPredicate:
             and self.rel_before == other.rel_before
         )
 
-    def __str__(self):
+    def __repr__(self):
         out = []
         out.append(f"type={self.type}")
-        out.append(
-            f"and_predicates={self.and_predicates}"
-        ) if self.and_predicates is not None else None
-        out.append(
-            f"or_predicates={self.or_predicates}"
-        ) if self.or_predicates is not None else None
-        out.append(
-            f"not_predicate={self.not_predicate}"
-        ) if self.not_predicate is not None else None
-        out.append(
-            f"abs_before={self.abs_before}"
-        ) if self.abs_before is not None else None
-        out.append(
-            f"rel_before={self.rel_before}"
-        ) if self.rel_before is not None else None
+        (
+            out.append(f"and_predicates={self.and_predicates}")
+            if self.and_predicates is not None
+            else None
+        )
+        (
+            out.append(f"or_predicates={self.or_predicates}")
+            if self.or_predicates is not None
+            else None
+        )
+        (
+            out.append(f"not_predicate={self.not_predicate}")
+            if self.not_predicate is not None
+            else None
+        )
+        (
+            out.append(f"abs_before={self.abs_before}")
+            if self.abs_before is not None
+            else None
+        )
+        (
+            out.append(f"rel_before={self.rel_before}")
+            if self.rel_before is not None
+            else None
+        )
         return f"<ClaimPredicate [{', '.join(out)}]>"

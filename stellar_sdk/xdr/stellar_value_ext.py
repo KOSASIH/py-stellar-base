@@ -1,7 +1,10 @@
 # This is an automatically generated file.
 # DO NOT EDIT or your changes may be overwritten
+from __future__ import annotations
+
 import base64
-from xdrlib import Packer, Unpacker
+
+from xdrlib3 import Packer, Unpacker
 
 from .ledger_close_value_signature import LedgerCloseValueSignature
 from .stellar_value_type import StellarValueType
@@ -41,7 +44,7 @@ class StellarValueExt:
             return
 
     @classmethod
-    def unpack(cls, unpacker: Unpacker) -> "StellarValueExt":
+    def unpack(cls, unpacker: Unpacker) -> StellarValueExt:
         v = StellarValueType.unpack(unpacker)
         if v == StellarValueType.STELLAR_VALUE_BASIC:
             return cls(v=v)
@@ -56,7 +59,7 @@ class StellarValueExt:
         return packer.get_buffer()
 
     @classmethod
-    def from_xdr_bytes(cls, xdr: bytes) -> "StellarValueExt":
+    def from_xdr_bytes(cls, xdr: bytes) -> StellarValueExt:
         unpacker = Unpacker(xdr)
         return cls.unpack(unpacker)
 
@@ -65,19 +68,29 @@ class StellarValueExt:
         return base64.b64encode(xdr_bytes).decode()
 
     @classmethod
-    def from_xdr(cls, xdr: str) -> "StellarValueExt":
+    def from_xdr(cls, xdr: str) -> StellarValueExt:
         xdr_bytes = base64.b64decode(xdr.encode())
         return cls.from_xdr_bytes(xdr_bytes)
+
+    def __hash__(self):
+        return hash(
+            (
+                self.v,
+                self.lc_value_signature,
+            )
+        )
 
     def __eq__(self, other: object):
         if not isinstance(other, self.__class__):
             return NotImplemented
         return self.v == other.v and self.lc_value_signature == other.lc_value_signature
 
-    def __str__(self):
+    def __repr__(self):
         out = []
         out.append(f"v={self.v}")
-        out.append(
-            f"lc_value_signature={self.lc_value_signature}"
-        ) if self.lc_value_signature is not None else None
+        (
+            out.append(f"lc_value_signature={self.lc_value_signature}")
+            if self.lc_value_signature is not None
+            else None
+        )
         return f"<StellarValueExt [{', '.join(out)}]>"

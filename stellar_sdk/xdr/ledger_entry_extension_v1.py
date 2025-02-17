@@ -1,7 +1,10 @@
 # This is an automatically generated file.
 # DO NOT EDIT or your changes may be overwritten
+from __future__ import annotations
+
 import base64
-from xdrlib import Packer, Unpacker
+
+from xdrlib3 import Packer, Unpacker
 
 from .ledger_entry_extension_v1_ext import LedgerEntryExtensionV1Ext
 from .sponsorship_descriptor import SponsorshipDescriptor
@@ -39,7 +42,7 @@ class LedgerEntryExtensionV1:
         self.ext.pack(packer)
 
     @classmethod
-    def unpack(cls, unpacker: Unpacker) -> "LedgerEntryExtensionV1":
+    def unpack(cls, unpacker: Unpacker) -> LedgerEntryExtensionV1:
         sponsoring_id = SponsorshipDescriptor.unpack(unpacker)
         ext = LedgerEntryExtensionV1Ext.unpack(unpacker)
         return cls(
@@ -53,7 +56,7 @@ class LedgerEntryExtensionV1:
         return packer.get_buffer()
 
     @classmethod
-    def from_xdr_bytes(cls, xdr: bytes) -> "LedgerEntryExtensionV1":
+    def from_xdr_bytes(cls, xdr: bytes) -> LedgerEntryExtensionV1:
         unpacker = Unpacker(xdr)
         return cls.unpack(unpacker)
 
@@ -62,16 +65,24 @@ class LedgerEntryExtensionV1:
         return base64.b64encode(xdr_bytes).decode()
 
     @classmethod
-    def from_xdr(cls, xdr: str) -> "LedgerEntryExtensionV1":
+    def from_xdr(cls, xdr: str) -> LedgerEntryExtensionV1:
         xdr_bytes = base64.b64decode(xdr.encode())
         return cls.from_xdr_bytes(xdr_bytes)
+
+    def __hash__(self):
+        return hash(
+            (
+                self.sponsoring_id,
+                self.ext,
+            )
+        )
 
     def __eq__(self, other: object):
         if not isinstance(other, self.__class__):
             return NotImplemented
         return self.sponsoring_id == other.sponsoring_id and self.ext == other.ext
 
-    def __str__(self):
+    def __repr__(self):
         out = [
             f"sponsoring_id={self.sponsoring_id}",
             f"ext={self.ext}",
